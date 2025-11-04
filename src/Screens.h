@@ -7,7 +7,7 @@ enum class Tela {
     CLOCK,
     DATE,
     WIFI,
-    UPDATE_CLOCK,
+    NTP_SCREEN,
     LANTERNA,
     INFORMACOES,
     

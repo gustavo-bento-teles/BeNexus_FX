@@ -4,6 +4,8 @@
 #include <NTPClient.h>
 #include <U8g2lib.h>
 #include <Bounce2.h>
+#include <Wire.h>
+#include <DS3231.h>
 
 #include "Buzzer.h"
 #include "Screens.h"
@@ -40,6 +42,10 @@ WiFiMode_t wifiMode;
 
 // Display
 U8G2_SH1106_128X64_NONAME_F_HW_I2C display(U8G2_R0, U8X8_PIN_NONE, 4, 5);
+
+// RTC
+DS3231 rtc;
+bool h12, pm;
 
 // Ícones
 
@@ -88,7 +94,7 @@ bool firstClient = true;
 // Variável que avalia se a tela está ligada
 bool telaLigada = true;
 
-bool lanternaLigda = false;
+bool lanternaLigada = false;
 
 bool tentandoConectarWifi = false;
 
@@ -130,8 +136,8 @@ void desligarWiFi() {
 
 void atualizarNTP() {
   display.clearBuffer();
-  display.drawStr((128 - display.getStrWidth("Atualizando NTP...")) / 2, 32, "Atualizando NTP...");
-  display.drawStr((128 - display.getStrWidth("Aguarde...")) / 2, 45, "Aguarde...");
+  display.drawStr((128 - display.getStrWidth("Updating NTP...")) / 2, 32, "Updating NTP...");
+  display.drawStr((128 - display.getStrWidth("Wait...")) / 2, 45, "Wait...");
   display.sendBuffer();
 
   if (firstClient) {
@@ -143,25 +149,59 @@ void atualizarNTP() {
   display.clearBuffer();
 
   if (ok) {
-    display.drawStr((128 - display.getStrWidth("NTP atualizado!")) / 2, 32, "NTP atualizado!");
+    display.drawStr((128 - display.getStrWidth("NTP updated!")) / 2, 32, "NTP updated!");
   } else {
-    display.drawStr((128 - display.getStrWidth("Falha ao atualizar!")) / 2, 32, "Falha ao atualizar!");
+    display.drawStr((128 - display.getStrWidth("Update failed!")) / 2, 32, "Update failed!");
+    return;
   }
 
   display.sendBuffer();
-  delay(1500);
+  delay(1000);
+
+  String formattedTime = timeClient.getFormattedTime();  // "14:37:52"
+
+  int hour   = formattedTime.substring(0, 2).toInt();    // 14
+  int minute = formattedTime.substring(3, 5).toInt();    // 37
+  int second = formattedTime.substring(6, 8).toInt();    // 52
+
+  rtc.setHour(hour);
+  rtc.setMinute(minute);
+  rtc.setSecond(second);
+
+  time_t rawtime = timeClient.getEpochTime();
+  struct tm *ti = localtime(&rawtime);
+
+  int dia   = ti->tm_mday;
+  int mes   = ti->tm_mon + 1;
+  int ano   = ti->tm_year + 1900;
+  int semana = ti->tm_wday; // 0 = domingo, 1 = segunda...
+
+  rtc.setYear(ano - 2000);
+  rtc.setMonth(mes);
+  rtc.setDate(dia);
+  rtc.setDoW((semana == 0) ? 1 : semana + 1);
+
+  display.clearBuffer();
+
+  display.drawStr((128 - display.getStrWidth("RTC updated!")) / 2, 32, "RTC updated!");
+
+  display.sendBuffer();
+  delay(1000);
 }
 
 
 
 void setup() {
+  Wire.begin();
+  rtc.setClockMode(false); // 24h
+
 	display.begin();
   display.setContrast(0);
   display.setPowerSave(0);
 
   display.clearBuffer();
   display.setFont(u8g2_font_6x10_tr);
-  display.drawStr(0, 10, "Iniciando botoes...");
+  display.drawStr(0, 10, "Starting buttons...");
   display.sendBuffer();
 
   pinMode(UP_BTN, INPUT_PULLUP);
@@ -169,7 +209,7 @@ void setup() {
   pinMode(SELECT_BTN, INPUT_PULLUP);
 	delay(250);
 
-  display.drawStr(0, 20, "Iniciando leds...");
+  display.drawStr(0, 20, "Starting leds...");
   display.sendBuffer();
 
   pinMode(LED_BUILTIN, OUTPUT);
@@ -178,7 +218,7 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH);
   delay(250);
 
-	display.drawStr(0, 30, "Fazendo debounce...");
+	display.drawStr(0, 30, "Doing debounce...");
   display.sendBuffer();
 
   upBtn.attach(UP_BTN); upBtn.interval(25);
@@ -186,8 +226,9 @@ void setup() {
   selectBtn.attach(SELECT_BTN); selectBtn.interval(25);
 	delay(250);
 
-  display.drawStr(0, 40, "Iniciando buzzer...");
+  display.drawStr(0, 40, "Starting buzzer...");
   display.sendBuffer();
+  delay(250);
 
   pinMode(BUZZER, OUTPUT);
 
@@ -195,18 +236,30 @@ void setup() {
     inicializacaoSilenciosa = false;
   }
 
-  display.clearBuffer();
+  if (downBtn.read() == LOW) {
+    return;
+  }
 
   display.setFont(u8g2_font_ncenB08_tr);
 
   if (inicializacaoSilenciosa) {
+    display.setFont(u8g2_font_6x10_tr);
+    display.drawStr(0, 50, "Init S Mode...");
+    display.sendBuffer();
     delay(250);
+    display.clearBuffer();
+    display.setFont(u8g2_font_ncenB08_tr);
     display.drawStr(int(128 - display.getStrWidth("Init S..."))/2, 32, "Init S...");
     display.sendBuffer();
 
   } else {
+    display.setFont(u8g2_font_6x10_tr);
+    display.drawStr(0, 50, "Init D Mode...");
+    display.sendBuffer();
     delay(250);
-    display.drawStr(int(128 - display.getStrWidth("Init S..."))/2, 32, "Init P...");
+    display.clearBuffer();
+    display.setFont(u8g2_font_ncenB08_tr);
+    display.drawStr(int(128 - display.getStrWidth("Init D..."))/2, 32, "Init D...");
     display.sendBuffer();
     alertSound(BUZZER);
   }
@@ -216,13 +269,13 @@ void setup() {
   display.clearBuffer();
 
   display.setFont(u8g2_font_6x10_tr);
-  display.drawStr(int(128 - display.getStrWidth("v1.0"))/2, 10, "v1.0");
+  display.drawStr(int(128 - display.getStrWidth("v1.1"))/2, 10, "v1.1");
 
   display.setFont(u8g2_font_9x15_mf);
   display.drawStr(int(128 - display.getStrWidth("BeNexus_FX"))/2, 32, "BeNexus_FX");
 
   display.setFont(u8g2_font_ncenB08_tr);
-  display.drawStr(int(128 - display.getStrWidth("por Gustavo Bento"))/2, 60, "por Gustavo Bento");
+  display.drawStr(int(128 - display.getStrWidth("by Gustavo Bento"))/2, 60, "by Gustavo Bento");
 
   display.sendBuffer();
   
@@ -252,12 +305,9 @@ void loop() {
         lastInteraction = millis();
         return;
     } else {
-        // Se a tela já está ligada → depende da tela atual
-        if (tela == Tela::UPDATE_CLOCK && WiFi.status() == WL_CONNECTED) {
-            atualizarNTP();
-        } else if (tela == Tela::WIFI || tela == Tela::LANTERNA || tela == Tela::INFORMACOES) {
+        if (tela == Tela::WIFI || tela == Tela::NTP_SCREEN || tela == Tela::LANTERNA || tela == Tela::INFORMACOES) {
           // deixa passar
-        } else if (tela == Tela::UPDATE_CLOCK && WiFi.status() != WL_CONNECTED) {
+        } else if (tela == Tela::NTP_SCREEN && WiFi.status() != WL_CONNECTED) {
           tela = Tela::WIFI;
           lastInteraction = millis();
           return;
@@ -306,8 +356,6 @@ void loop() {
     desligarWiFi();
   }
 
-  String hora = timeClient.getFormattedTime();
-
   // Atualiza display só se a tela estiver ligada
   if(telaLigada){
     switch (tela) {
@@ -317,8 +365,17 @@ void loop() {
 
         // Hora centralizada
         display.setFont(u8g2_font_fub20_tr);
-        int x = (128 - display.getStrWidth(hora.c_str()))/2;
-        display.drawStr(x,42,hora.c_str());
+        bool h12Flag, pmFlag;
+
+        int hour   = rtc.getHour(h12Flag, pmFlag);
+        int minute = rtc.getMinute();
+        int second = rtc.getSecond();
+
+        char buf[10];
+        sprintf(buf, "%02d:%02d:%02d", hour, minute, second);
+
+        int x = (128 - display.getStrWidth(buf)) / 2;
+        display.drawStr(x, 42, buf);
 
         display.sendBuffer();
         break;
@@ -330,26 +387,27 @@ void loop() {
         display.clearBuffer();
         display.setFont(u8g2_font_6x10_tr);
 
-        time_t rawtime = timeClient.getEpochTime();
-        struct tm *ti = localtime(&rawtime);
-
-        int dia   = ti->tm_mday;
-        int mes   = ti->tm_mon + 1;
-        int ano   = ti->tm_year + 1900;
-        int semana = ti->tm_wday; // 0 = domingo, 1 = segunda...
-
         // Nome dos dias da semana
         const char* diasSemana[] = {
-          "Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"
+          "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
         };
+
+        bool century = false;
 
         // Linha 1: Data completa
         char buf[20];
-        sprintf(buf, "%02d/%02d/%04d", dia, mes, ano);
+        sprintf(buf,
+                "%02d/%02d/%04d",
+                rtc.getMonth(century),
+                rtc.getDate(),
+                rtc.getYear() + 2000);
         int x = (128 - display.getStrWidth(buf)) / 2;
         display.drawStr(x, 20, buf);
 
         // Linha 2: Nome do dia da semana
+        int semana = rtc.getDoW() - 1;
+        if (semana < 0) semana = 6;
+
         const char* nomeDia = diasSemana[semana];
         int x2 = (128 - display.getStrWidth(nomeDia)) / 2;
         display.drawStr(x2, 40, nomeDia);
@@ -409,9 +467,9 @@ void loop() {
           }
 
         } else {
-          display.drawStr((128 - display.getStrWidth("Tela WiFi")) / 2, 8, "Tela WiFi");
+          display.drawStr((128 - display.getStrWidth("WiFi Screen")) / 2, 8, "WiFi Screen");
           display.drawHLine(0, 12, 128);
-          display.drawStr((128 - display.getStrWidth("[Ligar o WiFi]")) / 2, 38, "[Ligar o WiFi]");
+          display.drawStr((128 - display.getStrWidth("[Turn on WiFi]")) / 2, 38, "[Turn on WiFi]");
 
           wifiMode = WiFi.getMode();
 
@@ -438,7 +496,7 @@ void loop() {
 
           if (selectBtn.fell()) {
             display.clearBuffer();
-            display.drawStr((128 - display.getStrWidth("Se conectando a:")) / 2, 30, "Se conectando a:");
+            display.drawStr((128 - display.getStrWidth("Connecting on:")) / 2, 30, "Connecting on:");
             display.drawStr((128 - display.getStrWidth(ssid)) / 2, 45, ssid);
 
             display.sendBuffer();
@@ -453,26 +511,26 @@ void loop() {
         break;
       }
 
-      case Tela::UPDATE_CLOCK: {
+      case Tela::NTP_SCREEN: {
         display.setPowerSave(0);
         display.clearBuffer();
         display.setFont(u8g2_font_6x10_tr);
 
         if(WiFi.status() == WL_CONNECTED) {
-          display.drawStr((128 - display.getStrWidth("Tela NTP")) / 2, 8, "Tela NTP");
+          display.drawStr((128 - display.getStrWidth("NTP Screen")) / 2, 8, "NTP Screen");
           display.drawHLine(0, 12, 128);
-          display.drawStr((128 - display.getStrWidth("[Atualizar NTP]")) / 2, 38, "[Atualizar NTP]");
+          display.drawStr((128 - display.getStrWidth("[Update NTP]")) / 2, 38, "[Update NTP]");
 
           if (selectBtn.fell()) {
             atualizarNTP();   // atualiza se já tem WiFi
           }
 
         } else {
-          display.drawStr((128 - display.getStrWidth("Tela NTP")) / 2, 8, "Tela NTP");
+          display.drawStr((128 - display.getStrWidth("NTP Screen")) / 2, 8, "NTP Screen");
           display.drawHLine(0, 12, 128);
-          display.drawStr((128 - display.getStrWidth("Sem WiFi disponivel!")) / 2, 30, "Sem WiFi disponivel!");
-          display.drawStr((128 - display.getStrWidth("Use [tela WiFi]")) / 2, 45, "Use [tela WiFi]");
-          display.drawStr((128 - display.getStrWidth("para conectar")) / 2, 55, "para conectar");
+          display.drawStr((128 - display.getStrWidth("No WiFi available!")) / 2, 30, "No WiFi available!");
+          display.drawStr((128 - display.getStrWidth("Use [WiFi Screen]")) / 2, 45, "Use [WiFi Screen]");
+          display.drawStr((128 - display.getStrWidth("to connect")) / 2, 55, "to connect");
         }
 
         display.sendBuffer();
@@ -485,17 +543,17 @@ void loop() {
         display.setFont(u8g2_font_6x10_tr);
 
         if (selectBtn.fell()) {
-          lanternaLigda = !lanternaLigda;
+          lanternaLigada = !lanternaLigada;
         }
 
-        if (lanternaLigda) {
+        if (lanternaLigada) {
           display.drawXBMP(48, 8, 32, 32, epd_bitmap_lanternaLigada);
-          display.drawStr((128 - display.getStrWidth("[Lanterna ON]")) / 2, 60, "[Lanterna ON]");
+          display.drawStr((128 - display.getStrWidth("[Lantern ON]")) / 2, 60, "[Lantern ON]");
           digitalWrite(LED_LATERAL, LOW);
 
         } else {
           display.drawXBMP(48, 8, 32, 32, epd_bitmap_lanternaDesligada);
-          display.drawStr((128 - display.getStrWidth("[Lanterna OFF]")) / 2, 60, "[Lanterna OFF]");
+          display.drawStr((128 - display.getStrWidth("[Lantern OFF]")) / 2, 60, "[Lantern OFF]");
           digitalWrite(LED_LATERAL, HIGH);
         }
 
@@ -583,7 +641,7 @@ void loop() {
               display.drawStr(2, 50, uptimeStr);
 
               // Firmware Version
-              display.drawStr(2, 60, "FW: BeNexus_FX v1.0");
+              display.drawStr(2, 60, "FW: BeNexus_FX v1.1");
 
               display.sendBuffer();
 
@@ -608,7 +666,7 @@ void loop() {
           display.drawXBMP(48, 8, 32, 32, epd_bitmap_engrenagem);
 
           display.setFont(u8g2_font_6x10_tr);
-          display.drawStr((128 - display.getStrWidth("[Info tecn]")) / 2, 60, "[Info tecn]");
+          display.drawStr((128 - display.getStrWidth("[HW/SW Info]")) / 2, 60, "[HW/SW Info]");
 
           display.sendBuffer();
 
