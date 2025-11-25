@@ -7,8 +7,8 @@
 
 class NTPScreen : public Screen {
 public:
-    NTPScreen(Display* disp, RTCManager* rtc, Screen* next)
-        : display(disp), rtcManager(rtc), nextScreenPtr(next), nextTriggered(false) {}
+    NTPScreen(Display* disp, RTCManager* rtc, Screen* next, Screen* wifi)
+        : display(disp),  rtcManager(rtc), nextScreenPtr(next), wifiScreen(wifi), nextTriggered(false) {}
 
     const char* name() override { return "NTPScreen"; }
 
@@ -30,6 +30,8 @@ private:
     Display* display;
     RTCManager* rtcManager;
     Screen* nextScreenPtr;
+
+    Screen* wifiScreen;
 
     bool nextTriggered;
     bool firstClient = true;

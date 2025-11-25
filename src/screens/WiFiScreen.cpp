@@ -41,11 +41,11 @@ void WiFiScreen::draw() {
         }
         display->printCentered(modeStr, 45);
 
-        display->printCentered("[OFF WiFi]", 62);
+        display->printCentered("[Desligar WiFi]", 62);
     } 
     else {
-        display->printCentered("WiFi Screen", 8);
-        display->printCentered("[Turn on WiFi]", 38);
+        display->printCentered("Tela WiFi", 8);
+        display->printCentered("[Ligar WiFi]", 38);
 
         WiFiMode_t wifiMode = WiFi.getMode();
         const char* modeStr = "";
@@ -79,7 +79,7 @@ void WiFiScreen::onSelectPressed() {
         NetworkService::disconnect();
     } else {
         display->clear();
-        display->printCentered("Connecting on:", 30);
+        display->printCentered("Conectando em:", 30);
         display->printCentered(ssid, 45);
         display->display();
 

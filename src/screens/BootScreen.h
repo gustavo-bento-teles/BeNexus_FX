@@ -19,5 +19,5 @@ private:
     Screen* nextScreenPtr;
     bool finished = false;
     unsigned long startTime = 0;
-    const unsigned long bootDuration = 1500;
+    const unsigned long bootDuration = 1000;
 };

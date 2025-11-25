@@ -16,8 +16,9 @@ public:
 
     Screen* nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
 
-    void setScreens(Screen* clk, Screen* wifi, Screen* ntp, Screen* flash) {
+    void setScreens(Screen* clk, Screen* calendar, Screen* wifi, Screen* ntp, Screen* flash) {
         clockScreen = clk;
+        calendarScreen = calendar;
         wifiScreen = wifi;
         ntpScreen = ntp;
         flashlightScreen = flash;
@@ -30,6 +31,7 @@ protected:
 
 private:
     Screen* clockScreen;
+    Screen* calendarScreen;
     Screen* wifiScreen;
     Screen* ntpScreen;
     Screen* flashlightScreen;
@@ -41,10 +43,10 @@ private:
     
     static constexpr const char* options[5] = {
         "Relogio/Data",
+        "Calendario",
         "WiFi",
         "NTP",
-        "Lanterna",
-        "Desligar tela"
+        "Lanterna"
     };
     static constexpr int numOptions = 5;
 };

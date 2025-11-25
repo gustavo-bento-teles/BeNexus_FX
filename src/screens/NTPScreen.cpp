@@ -14,14 +14,14 @@ void NTPScreen::draw() {
     display->clear();
     display->fontSet(u8g2_font_6x10_tr);
 
-    display->printCentered("NTP Screen", 8);
+    display->printCentered("Tela NTP", 8);
 
     if (NetworkService::isConnected()) {
-        display->printCentered("[Update NTP]", 38);
+        display->printCentered("[Atualizar NTP]", 38);
     } else {
-        display->printCentered("No WiFi available!", 30);
-        display->printCentered("Use [WiFi Screen]", 45);
-        display->printCentered("to connect", 55);
+        display->printCentered("Sem WiFi disponivel!", 30);
+        display->printCentered("Use [tela WiFi]", 45);
+        display->printCentered("para conectar", 55);
     }
 
     display->display();
@@ -43,13 +43,16 @@ void NTPScreen::onDownPressed() {
 void NTPScreen::onSelectPressed() {
     if (NetworkService::isConnected()) {
         atualizarNTP();
+    } else {
+        nextScreenPtr = wifiScreen;
+        nextTriggered = true;
     }
 }
 
 void NTPScreen::atualizarNTP() {
     display->clear();
-    display->printCentered("Updating NTP...", 32);
-    display->printCentered("Wait...", 45);
+    display->printCentered("Atualizando NTP...", 32);
+    display->printCentered("Aguarde...", 45);
     display->display();
 
     if (firstClient) {
@@ -61,13 +64,13 @@ void NTPScreen::atualizarNTP() {
     display->clear();
 
     if (!ok) {
-        display->printCentered("Update failed!", 32);
+        display->printCentered("Atualizacao falhou!", 32);
         display->display();
         delay(1000);
         return;
     }
 
-    display->printCentered("NTP updated!", 32);
+    display->printCentered("NTP atualizado!", 32);
     display->display();
     delay(1000);
 
@@ -76,7 +79,7 @@ void NTPScreen::atualizarNTP() {
     rtcManager->setDateTime(ti);
 
     display->clear();
-    display->printCentered("RTC updated!", 32);
+    display->printCentered("RTC atualizado!", 32);
     display->display();
     delay(1000);
 }

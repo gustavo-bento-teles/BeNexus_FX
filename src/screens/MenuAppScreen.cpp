@@ -53,20 +53,20 @@ void MenuAppScreen::onSelectPressed() {
             nextTriggered = true;
             break;
         case 1:
-            nextScreenPtr = wifiScreen;
+            nextScreenPtr = calendarScreen;
             nextTriggered = true;
             break;
         case 2:
-            nextScreenPtr = ntpScreen;
+            nextScreenPtr = wifiScreen;
             nextTriggered = true;
             break;
         case 3:
-            nextScreenPtr = flashlightScreen;
+            nextScreenPtr = ntpScreen;
             nextTriggered = true;
             break;
         case 4:
-            display->displayOn(false);
-            selectedIndex = 0;
+            nextScreenPtr = flashlightScreen;
+            nextTriggered = true;
             break;
     }
 }

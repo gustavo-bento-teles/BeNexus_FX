@@ -19,7 +19,7 @@ void ClockScreen::draw() {
     display->fontSet(u8g2_font_6x10_tr);
     display->printCentered(rtcManager->getDateString().c_str(), 42);
 
-    const char* dias[7] = {"Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"};
+    const char* dias[7] = {"Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"};
     char dowStr[4];
     int dow = rtcManager->getDoW() - 1;
     sprintf(dowStr, "%s", dias[dow]);
