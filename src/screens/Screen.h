@@ -18,4 +18,8 @@ protected:
     virtual void onUpPressed() {}
     virtual void onDownPressed() {}
     virtual void onSelectPressed() {}
+
+    virtual void onUpHeld() {}
+    virtual void onDownHeld() {}
+    virtual void onSelectHeld() {}
 };

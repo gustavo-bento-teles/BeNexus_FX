@@ -16,6 +16,10 @@ void Display::display() {
     u8g2.sendBuffer();
 }
 
+int Display::getWStr(const char* text) {
+    return u8g2.getStrWidth(text);
+}
+
 void Display::drawText(int x, int y, const char* text) {
     u8g2.drawStr(x, y, text);
 }
@@ -46,6 +50,10 @@ void Display::displayOn(bool status) {
 
 void Display::drawBitmap(int x, int y, int w, int h, const uint8_t* bitmap) {
     u8g2.drawXBMP(x, y, w, h, bitmap);
+}
+
+void Display::drawHorizontalLine(int x, int y, int w) {
+    u8g2.drawHLine(x, y, w);
 }
 
 bool Display::getDisplayStatus() {

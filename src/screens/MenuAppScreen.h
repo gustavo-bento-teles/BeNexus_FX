@@ -2,6 +2,9 @@
 #include "Screen.h"
 #include "drivers/Display.h"
 
+#include "animations/Animator.h"
+#include "animations/LineGrowAnimation.h"
+
 class MenuAppScreen : public Screen {
 public:
     MenuAppScreen(Display* disp)
@@ -40,12 +43,14 @@ private:
     int selectedIndex = 0;
     Screen* nextScreenPtr;
     bool nextTriggered;
+
+    Animator animator;
     
     static constexpr const char* options[5] = {
         "Relogio/Data",
         "Calendario",
-        "WiFi",
-        "NTP",
+        "Tela WiFi",
+        "Tela NTP",
         "Lanterna"
     };
     static constexpr int numOptions = 5;

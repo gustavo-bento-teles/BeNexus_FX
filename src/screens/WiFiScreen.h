@@ -3,6 +3,9 @@
 #include "drivers/Display.h"
 #include <ESP8266WiFi.h>
 
+#include "animations/Animator.h"
+#include "animations/LineGrowAnimation.h"
+
 class WiFiScreen : public Screen {
 public:
     WiFiScreen(Display* disp, Screen* next)
@@ -26,4 +29,6 @@ private:
     Display* display;
     Screen* nextScreenPtr;
     bool nextTriggered;
+
+    Animator animator;
 };

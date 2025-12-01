@@ -22,16 +22,66 @@ void Buttons::update() {
     btnUp.update();
     btnDown.update();
     btnSelect.update();
+
+    if (btnUp.fell()) {
+        upPressedAt = millis();
+        upHoldFired = false;
+    }
+
+    if (btnDown.fell()) {
+        downPressedAt = millis();
+        downHoldFired = false;
+    }
+
+    if (btnSelect.fell()) {
+        selectPressedAt = millis();
+        selectHoldFired = false;
+    }
 }
 
 bool Buttons::upPressed() {
-    return btnUp.fell();
+    return btnUp.fell() && !upHoldFired;
 }
 
 bool Buttons::downPressed() {
-    return btnDown.fell();
+    return btnDown.fell() && !downHoldFired;
 }
 
 bool Buttons::selectPressed() {
-    return btnSelect.fell();
+    return btnSelect.fell() && !selectHoldFired;
+}
+
+bool Buttons::upHeld(uint16_t holdMs) {
+    if (!upHoldFired &&
+        btnUp.read() == LOW &&
+        millis() - upPressedAt >= holdMs) {
+
+        upHoldFired = true;
+        return true;
+    }
+    return false;
+}
+
+
+bool Buttons::downHeld(uint16_t holdMs) {
+    if (!downHoldFired &&
+        btnDown.read() == LOW &&
+        millis() - downPressedAt >= holdMs) {
+
+        downHoldFired = true;
+        return true;
+    }
+    return false;
+}
+
+
+bool Buttons::selectHeld(uint16_t holdMs) {
+    if (!selectHoldFired&&
+        btnSelect.read() == LOW &&
+        millis() - selectPressedAt >= holdMs) {
+
+        selectHoldFired = true;
+        return true;
+    }
+    return false;
 }

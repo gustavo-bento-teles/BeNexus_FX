@@ -9,13 +9,18 @@ void WiFiScreen::begin() {
     nextTriggered = false;
     display->clear();
     display->fontSet(u8g2_font_6x10_tr);
+
+   animator.add(new LineGrowAnimation(0, 11, 128, 5, true, false));
 }
 
-void WiFiScreen::update() {}
+void WiFiScreen::update() {
+    animator.update();
+}
 
 void WiFiScreen::draw() {
     display->clear();
-    display->fontSet(u8g2_font_6x10_tr);
+
+    animator.draw(display);
 
     if (NetworkService::isConnected()) {
         String ip = WiFi.localIP().toString();
@@ -64,6 +69,7 @@ void WiFiScreen::draw() {
 void WiFiScreen::end() {
     display->clear();
     display->display();
+    animator.clear();
 }
 
 void WiFiScreen::onUpPressed() {

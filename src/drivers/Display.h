@@ -6,12 +6,14 @@ public:
     void begin();
     void clear();
     void display();
+    int getWStr(const char* text);
     void drawText(int x, int y, const char* text);
     void printCentered(const char* text, int yOffset = 0);
     void fontSet(const uint8_t *font);
     void setDisplayContrast(int contrastLevel);
     void displayOn(bool status);
     void drawBitmap(int x, int y, int w, int h, const uint8_t* bitmap);
+    void drawHorizontalLine(int x, int y, int w);
     bool getDisplayStatus();
     void setAutoOff(unsigned long timeout);
     void handleAutoOff();

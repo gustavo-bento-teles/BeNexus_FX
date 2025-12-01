@@ -11,7 +11,24 @@ public:
     bool downPressed();
     bool selectPressed();
 
-private:
+    bool upHeld(uint16_t holdMs = 500);
+    bool downHeld(uint16_t holdMs = 500);
+    bool selectHeld(uint16_t holdMs = 500);
+
+    bool getUpHoldFired() const {return upHoldFired;}
+    bool getDownHoldFired() const {return downHoldFired;}
+    bool getSelectHoldFired() const {return selectHoldFired;}
+
     Bounce btnUp, btnDown, btnSelect;
+
+private:
+    uint32_t upPressedAt = 0;
+    uint32_t downPressedAt = 0;
+    uint32_t selectPressedAt = 0;
+
+    bool upHoldFired = false;
+    bool downHoldFired = false;
+    bool selectHoldFired = false;
+
     uint8_t upPin, downPin, selectPin;
 };

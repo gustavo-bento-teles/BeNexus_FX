@@ -6,13 +6,18 @@ void NTPScreen::begin() {
     nextTriggered = false;
     display->clear();
     display->fontSet(u8g2_font_6x10_tr);
+
+    animator.add(new LineGrowAnimation(0, 11, 128, 5, true, false));
 }
 
-void NTPScreen::update() {}
+void NTPScreen::update() {
+    animator.update();
+}
 
 void NTPScreen::draw() {
     display->clear();
-    display->fontSet(u8g2_font_6x10_tr);
+
+    animator.draw(display);
 
     display->printCentered("Tela NTP", 8);
 
@@ -30,6 +35,7 @@ void NTPScreen::draw() {
 void NTPScreen::end() {
     display->clear();
     display->display();
+    animator.clear();
 }
 
 void NTPScreen::onUpPressed() {

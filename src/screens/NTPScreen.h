@@ -5,6 +5,9 @@
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 
+#include "animations/LineGrowAnimation.h"
+#include "animations/Animator.h"
+
 class NTPScreen : public Screen {
 public:
     NTPScreen(Display* disp, RTCManager* rtc, Screen* next, Screen* wifi)
@@ -26,6 +29,8 @@ protected:
 
 private:
     void atualizarNTP();
+
+    Animator animator;
 
     Display* display;
     RTCManager* rtcManager;

@@ -5,16 +5,21 @@ void MenuAppScreen::begin() {
     display->clear();
     display->fontSet(u8g2_font_6x10_tr);
     display->display();
+
+    animator.add(new LineGrowAnimation(22, 12 + (selectedIndex * 12), display->getWStr(options[selectedIndex]) - 19, 3, true, true));
 }
 
-void MenuAppScreen::update() {}
+void MenuAppScreen::update() {
+    animator.update();
+}
 
 void MenuAppScreen::draw() {
     display->clear();
 
+    animator.draw(display);
+
     display->fontSet(u8g2_font_6x10_tr);
 
-    // posição vertical inicial
     int y = 10;
     for (int i = 0; i < numOptions; i++) {
         String line = (i == selectedIndex) ? "> " : "  ";
@@ -28,6 +33,7 @@ void MenuAppScreen::draw() {
 void MenuAppScreen::end() {
     display->clear();
     display->display();
+    animator.clear();
 }
 
 void MenuAppScreen::onUpPressed() {
@@ -36,6 +42,8 @@ void MenuAppScreen::onUpPressed() {
     } else {
         selectedIndex = numOptions - 1;
     }
+
+    animator.add(new LineGrowAnimation(22, 12 + (selectedIndex * 12), display->getWStr(options[selectedIndex]) - 19, 3, true, true));
 }
 
 void MenuAppScreen::onDownPressed() {
@@ -44,6 +52,8 @@ void MenuAppScreen::onDownPressed() {
     } else {
         selectedIndex = 0;
     }
+
+    animator.add(new LineGrowAnimation(22, 12 + (selectedIndex * 12), display->getWStr(options[selectedIndex]) - 19, 3, true, true));
 }
 
 void MenuAppScreen::onSelectPressed() {

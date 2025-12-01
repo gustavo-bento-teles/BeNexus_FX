@@ -3,7 +3,12 @@
 
 enum class ButtonEvent : uint8_t {
     None,
+    
     Up,
     Down,
-    Select
+    Select,
+
+    UpHold,
+    DownHold,
+    SelectHold
 };
