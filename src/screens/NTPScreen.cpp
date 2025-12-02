@@ -7,6 +7,8 @@ void NTPScreen::begin() {
     display->clear();
     display->fontSet(u8g2_font_6x10_tr);
 
+    nextScreenPtr = menuAppScreen;
+
     animator.add(new LineGrowAnimation(0, 11, 128, 5, true, false));
 }
 

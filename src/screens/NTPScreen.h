@@ -37,6 +37,7 @@ private:
     Screen* nextScreenPtr;
 
     Screen* wifiScreen;
+    Screen* menuAppScreen = nextScreenPtr;
 
     bool nextTriggered;
     bool firstClient = true;
