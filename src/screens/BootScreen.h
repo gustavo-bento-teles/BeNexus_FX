@@ -2,6 +2,9 @@
 #include "Screen.h"
 #include "drivers/Display.h"
 
+#include "animations/Animator.h"
+#include "animations/LineGrowAnimation.h"
+
 class BootScreen : public Screen {
 public:
     BootScreen(Display* disp, Screen* next);
@@ -15,6 +18,8 @@ public:
     Screen* nextScreen() override;
 
 private:
+    Animator animator;
+
     Display* display;
     Screen* nextScreenPtr;
     bool finished = false;

@@ -26,23 +26,29 @@ public:
 
         currentWidth += speed;
 
-        if (currentWidth >= maxWidth) {
+        if (speed > 0 && currentWidth >= maxWidth) {
             currentWidth = maxWidth;
-
-            if (stopAtEnd) {
-                active = false;
-            }
+            if (stopAtEnd) active = false;
+        }
+        else if (speed < 0 && currentWidth <= -maxWidth) {
+            currentWidth = -maxWidth;
+            if (stopAtEnd) active = false;
         }
     }
 
     void draw(Display* display) override {
-        display->drawHorizontalLine(x, y, x + currentWidth);
+        int x1 = x;
+        int x2 = x + currentWidth;
+
+        if (x2 < x1)
+            std::swap(x1, x2);
+
+        display->drawHorizontalLine(x1, y, x2);
     }
 
     bool finished() override {
-        if (removeOnFinish) {
+        if (removeOnFinish)
             return !active;
-        }
         return false;
     }
 };
