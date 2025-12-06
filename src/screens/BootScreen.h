@@ -15,14 +15,15 @@ public:
     void update() override;
     void draw() override;
     void end() override;
-    Screen* nextScreen() override;
+    
+    Screen* nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
 
 private:
     Animator animator;
 
     Display* display;
     Screen* nextScreenPtr;
-    bool finished = false;
+    bool nextTriggered = false;
     unsigned long startTime = 0;
     const unsigned long bootDuration = 1000;
 };

@@ -1,5 +1,4 @@
 #pragma once
-#include "drivers/Display.h"
 
 class Animation {
 public:

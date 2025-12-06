@@ -4,6 +4,7 @@
 class Buttons {
 public:
     Buttons(uint8_t upPin, uint8_t downPin, uint8_t selectPin);
+    
     void begin();
     void update();
 
@@ -15,13 +16,9 @@ public:
     bool downHeld(uint16_t holdMs = 500);
     bool selectHeld(uint16_t holdMs = 500);
 
-    bool getUpHoldFired() const {return upHoldFired;}
-    bool getDownHoldFired() const {return downHoldFired;}
-    bool getSelectHoldFired() const {return selectHoldFired;}
-
+private:
     Bounce btnUp, btnDown, btnSelect;
 
-private:
     uint32_t upPressedAt = 0;
     uint32_t downPressedAt = 0;
     uint32_t selectPressedAt = 0;

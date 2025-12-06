@@ -40,15 +40,15 @@ void Buttons::update() {
 }
 
 bool Buttons::upPressed() {
-    return btnUp.fell() && !upHoldFired;
+    return btnUp.rose() && !upHoldFired;
 }
 
 bool Buttons::downPressed() {
-    return btnDown.fell() && !downHoldFired;
+    return btnDown.rose() && !downHoldFired;
 }
 
 bool Buttons::selectPressed() {
-    return btnSelect.fell() && !selectHoldFired;
+    return btnSelect.rose() && !selectHoldFired;
 }
 
 bool Buttons::upHeld(uint16_t holdMs) {

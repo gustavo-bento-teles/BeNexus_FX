@@ -25,7 +25,7 @@ void BootScreen::begin() {
 
 void BootScreen::update() {
     if (millis() - startTime >= bootDuration) {
-        finished = true;
+        nextTriggered = true;
     }
 
     animator.update();
@@ -41,8 +41,4 @@ void BootScreen::end() {
     display->clear();
     display->display();
     animator.clear();
-}
-
-Screen* BootScreen::nextScreen() {
-    return finished ? nextScreenPtr : this;
 }
