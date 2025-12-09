@@ -116,7 +116,7 @@ if (btnUp.rose() && !upHoldFired)
 ### 4. **Drivers (Hardware)**
 
 #### Display
-**Hardware:** OLED SH1106 128x64 (I2C)
+**Hardware:** OLED SH1106 128x64 (I2C)  
 **Biblioteca:** U8g2
 
 **Funcionalidades:**
@@ -370,7 +370,6 @@ Quer contribuir ou estender o projeto? Confira nossos guias:
 
 ---
 
-**Versão:** 2.3.0  
-**Data:** Dezembro 2025  
+**Versão:** 2.3.1  
 **Plataforma:** ESP8266 (ESP-12E)  
 **Framework:** Arduino

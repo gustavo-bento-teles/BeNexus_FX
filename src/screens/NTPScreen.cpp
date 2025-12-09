@@ -8,18 +8,12 @@ void NTPScreen::begin() {
     display->fontSet(u8g2_font_6x10_tr);
 
     nextScreenPtr = menuAppScreen;
-
-    animator.add(new LineGrowAnimation(0, 11, 128, 5, true, false));
 }
 
-void NTPScreen::update() {
-    animator.update();
-}
+void NTPScreen::update() {}
 
 void NTPScreen::draw() {
     display->clear();
-
-    animator.draw(display);
 
     display->printCentered("Tela NTP", 8);
 
@@ -37,7 +31,6 @@ void NTPScreen::draw() {
 void NTPScreen::end() {
     display->clear();
     display->display();
-    animator.clear();
 }
 
 void NTPScreen::onUpPressed() {

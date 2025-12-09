@@ -30,8 +30,6 @@ protected:
 private:
     void atualizarNTP();
 
-    Animator animator;
-
     Display* display;
     RTCManager* rtcManager;
     Screen* nextScreenPtr;

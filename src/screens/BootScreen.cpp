@@ -9,7 +9,7 @@ void BootScreen::begin() {
     display->clear();
 
     display->fontSet(u8g2_font_6x10_tr);
-    display->printCentered("v2.3.0", 10);
+    display->printCentered("v2.3.1", 10);
     
     display->fontSet(u8g2_font_9x15_mf);
     display->printCentered("BeNexus_FX", 32);

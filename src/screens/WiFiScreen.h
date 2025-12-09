@@ -29,6 +29,4 @@ private:
     Display* display;
     Screen* nextScreenPtr;
     bool nextTriggered;
-
-    Animator animator;
 };
