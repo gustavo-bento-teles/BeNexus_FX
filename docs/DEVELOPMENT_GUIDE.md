@@ -2,7 +2,7 @@
 
 ## 📋 Índice
 1. [Adicionando Novos Drivers](#-adicionando-novos-drivers)
-2. [Criando Novas Telas](#-criando-novas-telas)
+2. [Criando Novas Telas](#%EF%B8%8F-criando-novas-telas)
 3. [Sistema de Animações](#-sistema-de-animações)
 4. [Boas Práticas](#-boas-práticas)
 
