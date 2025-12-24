@@ -1,12 +1,12 @@
 #pragma once
-#include "Screen.h"
+#include "screens/Screen.h"
 #include "drivers/Display.h"
 #include "drivers/RTC.h"
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 
-#include "animations/LineGrowAnimation.h"
-#include "animations/Animator.h"
+#include "screens/animations/LineGrowAnimation.h"
+#include "screens/animations/Animator.h"
 
 class NTPScreen : public Screen {
 public:

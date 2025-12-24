@@ -1,4 +1,4 @@
-#include "screens/NTPScreen.h"
+#include "NTPScreen.h"
 #include "services/NetworkService.h"
 #include <Arduino.h>
 

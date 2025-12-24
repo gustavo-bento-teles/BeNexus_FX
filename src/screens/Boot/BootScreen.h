@@ -1,9 +1,9 @@
 #pragma once
-#include "Screen.h"
+#include "screens/Screen.h"
 #include "drivers/Display.h"
 
-#include "animations/Animator.h"
-#include "animations/LineGrowAnimation.h"
+#include "screens/animations/Animator.h"
+#include "screens/animations/LineGrowAnimation.h"
 
 class BootScreen : public Screen {
 public:

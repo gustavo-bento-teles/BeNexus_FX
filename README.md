@@ -370,6 +370,6 @@ Quer contribuir ou estender o projeto? Confira nossos guias:
 
 ---
 
-**Versão:** 2.3.1  
+**Versão:** 2.3.2  
 **Plataforma:** ESP8266 (ESP-12E)  
 **Framework:** Arduino

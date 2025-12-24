@@ -1,5 +1,5 @@
 #pragma once
-#include "Screen.h"
+#include "screens/Screen.h"
 #include "drivers/Display.h"
 #include "output/OutputManager.h"
 

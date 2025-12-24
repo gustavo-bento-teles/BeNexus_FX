@@ -1,4 +1,4 @@
-#include "screens/WiFiScreen.h"
+#include "WiFiScreen.h"
 #include "services/NetworkService.h"
 #include <Arduino.h>
 

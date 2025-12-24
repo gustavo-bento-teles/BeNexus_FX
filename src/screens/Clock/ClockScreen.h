@@ -1,14 +1,14 @@
 #pragma once
-#include "Screen.h"
+#include "screens/Screen.h"
 #include "drivers/Display.h"
 #include "drivers/RTC.h"
 
-class CalendarScreen : public Screen {
+class ClockScreen : public Screen {
 public:
-    CalendarScreen(Display* disp, RTCManager* rtc, Screen* next)
+    ClockScreen(Display* disp, RTCManager* rtc, Screen* next)
         : display(disp), rtcManager(rtc), nextScreenPtr(next), nextTriggered(false) {}
     
-    const char* name() override { return "CalendarScreen"; }
+    const char* name() override { return "ClcokScreen"; }
 
     void begin() override;
     void update() override;
@@ -27,7 +27,4 @@ private:
     RTCManager* rtcManager;
     Screen* nextScreenPtr;
     bool nextTriggered;
-
-    int daysInMonth(int month, int year);
-    int weekdayOf(int day, int month, int year);
 };

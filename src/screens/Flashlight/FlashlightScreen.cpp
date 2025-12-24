@@ -1,4 +1,4 @@
-#include "screens/FlashlightScreen.h"
+#include "FlashlightScreen.h"
 
 // lanternaDesligada, 32x32px
 const unsigned char epd_bitmap_lanternaDesligada [] PROGMEM = {

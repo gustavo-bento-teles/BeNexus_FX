@@ -241,10 +241,10 @@ protected:
 
 **Exemplo: Cronômetro**
 
-**`screens/StopwatchScreen.h`**
+**`screens/Stopwatch/StopwatchScreen.h`**
 ```cpp
 #pragma once
-#include "Screen.h"
+#include "screens/Screen.h"
 #include "drivers/Display.h"
 
 class StopwatchScreen : public Screen {
@@ -278,7 +278,7 @@ private:
 };
 ```
 
-**`screens/StopwatchScreen.cpp`**
+**`screens/Stopwatch/StopwatchScreen.cpp`**
 ```cpp
 #include "StopwatchScreen.h"
 
@@ -358,7 +358,7 @@ String StopwatchScreen::formatTime(unsigned long ms) {
 #### 2️⃣ Instanciar no main.cpp
 
 ```cpp
-#include "screens/StopwatchScreen.h"
+#include "screens/Stopwatch/StopwatchScreen.h"
 
 // Criar instância (ordem importa: depende do menu)
 StopwatchScreen stopwatchScreen(&display, &menuAppScreen);
@@ -367,7 +367,6 @@ void setup() {
     // ... código existente ...
     
     // Se quiser adicionar ao menu, precisa implementar lógica no MenuAppScreen
-    // (ainda não desenvolvida, próxima atualização)
 }
 ```
 
