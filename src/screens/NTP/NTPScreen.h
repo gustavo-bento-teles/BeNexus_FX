@@ -5,9 +5,6 @@
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 
-#include "screens/animations/LineGrowAnimation.h"
-#include "screens/animations/Animator.h"
-
 class NTPScreen : public Screen {
 public:
     NTPScreen(Display* disp, RTCManager* rtc, Screen* next, Screen* wifi)
@@ -35,7 +32,7 @@ private:
     Screen* nextScreenPtr;
 
     Screen* wifiScreen;
-    Screen* menuAppScreen = nextScreenPtr;
+    Screen* menuAppScreen;
 
     bool nextTriggered;
     bool firstClient = true;

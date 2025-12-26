@@ -41,8 +41,7 @@ void WiFiScreen::draw() {
         display->printCentered(modeStr, 45);
 
         display->printCentered("[Desligar WiFi]", 62);
-    } 
-    else {
+    } else {
         display->printCentered("Tela WiFi", 8);
         display->printCentered("[Ligar WiFi]", 38);
 

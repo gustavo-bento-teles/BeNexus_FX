@@ -10,6 +10,7 @@
 #include "screens/Calendar/CalendarScreen.h"
 #include "screens/MenuApp/MenuAppScreen.h"
 #include "screens/WiFi/WiFiScreen.h"
+#include "screens/TCP/TCPScreen.h"
 #include "screens/NTP/NTPScreen.h"
 #include "screens/Flashlight/FlashlightScreen.h"
 
@@ -34,6 +35,7 @@ InputManager inputManager(buttons);
 MenuAppScreen menuAppScreen(&display);
 FlashlightScreen flashlightScreen(&display, &menuAppScreen, &outputManager);
 WiFiScreen wifiScreen(&display, &menuAppScreen);
+TCPScreen tcpScreen(&display, &menuAppScreen, &wifiScreen);
 NTPScreen ntpScreen(&display, &rtc, &menuAppScreen, &wifiScreen);
 CalendarScreen calendarScreen(&display, &rtc, &menuAppScreen);
 ClockScreen clockScreen(&display, &rtc, &menuAppScreen);
@@ -44,7 +46,7 @@ ScreenManager screenManager(&bootScreen, &display);
 void setup() {
     display.begin();
 
-    menuAppScreen.setScreens(&clockScreen, &calendarScreen, &wifiScreen, &ntpScreen, &flashlightScreen);
+    menuAppScreen.setScreens(&clockScreen, &calendarScreen, &wifiScreen, &tcpScreen, &ntpScreen, &flashlightScreen);
 
     screenManager.begin();
     inputManager.begin();
