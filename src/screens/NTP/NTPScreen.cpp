@@ -6,7 +6,6 @@ void NTPScreen::begin() {
     nextTriggered = false;
     display->clear();
     display->fontSet(u8g2_font_6x10_tr);
-
     nextScreenPtr = menuAppScreen;
 }
 
