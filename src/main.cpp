@@ -17,6 +17,7 @@
 #include "core/ScreenManager.h"
 #include "input/InputManager.h"
 #include "output/OutputManager.h"
+#include "services/CommandService.h"
 
 const uint8_t PIN_UP_BTN     = 12;
 const uint8_t PIN_DOWN_BTN   = 13;
@@ -31,11 +32,12 @@ Lantern lantern(PIN_LANTERN);
 
 OutputManager outputManager(lantern);
 InputManager inputManager(buttons);
+CommandService commandService(&outputManager);
 
 MenuAppScreen menuAppScreen(&display);
 FlashlightScreen flashlightScreen(&display, &menuAppScreen, &outputManager);
 WiFiScreen wifiScreen(&display, &menuAppScreen);
-TCPScreen tcpScreen(&display, &menuAppScreen, &wifiScreen);
+TCPScreen tcpScreen(&display, &menuAppScreen, &wifiScreen, &commandService);
 NTPScreen ntpScreen(&display, &rtc, &menuAppScreen, &wifiScreen);
 CalendarScreen calendarScreen(&display, &rtc, &menuAppScreen);
 ClockScreen clockScreen(&display, &rtc, &menuAppScreen);

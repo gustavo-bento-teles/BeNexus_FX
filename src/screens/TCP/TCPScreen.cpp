@@ -19,11 +19,20 @@ void TCPScreen::update() {
         if (msg.length() > 0) {
             display->resetAutoOff();
             if (contador < numMaxVisible) {
-                tcpCmds[contador++] = msg;
+                if (msg == "Cliente conectado!" || msg == "Cliente desconectado") {
+                    tcpCmds[contador++] = msg;
+                } else {
+                    tcpCmds[contador++] = commandService->execCmd(msg);
+                }
             } else {
                 for (int i = 0; i < numMaxVisible - 1; i++)
                     tcpCmds[i] = tcpCmds[i + 1];
-                tcpCmds[numMaxVisible - 1] = msg;
+                
+                if (msg == "Cliente conectado!" || msg == "Cliente desconectado") {
+                    tcpCmds[numMaxVisible - 1] = msg;
+                } else {
+                    tcpCmds[numMaxVisible - 1] = commandService->execCmd(msg);
+                }
             }
         }
     }

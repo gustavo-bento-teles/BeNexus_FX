@@ -4,8 +4,6 @@ void TCPService::begin() {
     serverTCP.begin();
     serverTCP.setNoDelay(true);
     servidorLigado = true;
-    lastReceived = "Servidor iniciado";
-    newMsg = true;
 }
 
 void TCPService::update() {
@@ -35,7 +33,6 @@ void TCPService::update() {
             if (line.length() > 0) {
                 lastReceived = line;
                 newMsg = true;
-                activeClient.println("Recebido: " + line);
                 activeClient.print("> ");
                 activeClient.flush();
             }
@@ -51,14 +48,12 @@ void TCPService::update() {
 
 void TCPService::disconnect() {
     if (activeClient && activeClient.connected()) {
-        activeClient.println("Desconectando...");
+        activeClient.println("\nDesconectando...");
         activeClient.flush();
         delay(100);
         activeClient.stop();
     }
     activeClient = WiFiClient();
-    lastReceived = "Desconectado";
-    newMsg = true;
     servidorLigado = false;
 }
 

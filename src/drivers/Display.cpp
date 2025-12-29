@@ -5,7 +5,7 @@ void Display::begin() {
     displayOn(true);
     fontSet(u8g2_font_6x10_tr);
     setDisplayContrast(0);
-    setAutoOff(5000);
+    setAutoOff(10000);
 }
 
 void Display::clear() {

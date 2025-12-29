@@ -1,12 +1,13 @@
 #pragma once
 #include "screens/Screen.h"
 #include "drivers/Display.h"
+#include "services/CommandService.h"
 #include <ESP8266WiFi.h>
 
 class TCPScreen : public Screen {
 public:
-    TCPScreen(Display* disp, Screen* next, Screen* wifi)
-        : display(disp), nextScreenPtr(next), wifiScreen(wifi), menuAppScreen(next), nextTriggered(false) {}
+    TCPScreen(Display* disp, Screen* next, Screen* wifi, CommandService* cmdService)
+        : display(disp), nextScreenPtr(next), wifiScreen(wifi), menuAppScreen(next), commandService(cmdService), nextTriggered(false) {}
     
     const char* name() override { return "TCPScreen"; }
 
@@ -29,6 +30,7 @@ private:
 
     Screen* wifiScreen;
     Screen* menuAppScreen;
+    CommandService* commandService;
 
     static constexpr uint8_t numMaxVisible = 5;
     String tcpCmds[numMaxVisible] = {"", "", "", "", ""};
