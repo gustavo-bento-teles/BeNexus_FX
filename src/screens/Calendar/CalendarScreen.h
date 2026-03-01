@@ -22,11 +22,23 @@ protected:
     void onUpPressed() override;
     void onDownPressed() override;
 
+    void onSelectHeld() override;
+    void onUpHeld() override;
+    void onDownHeld() override;
+
 private:
     Display* display;
     RTCManager* rtcManager;
     Screen* nextScreenPtr;
     bool nextTriggered;
+
+    int month;
+    int year;
+
+    int currentMonth;
+    int currentYear;
+
+    bool dateUpdated = false;
 
     int daysInMonth(int month, int year);
     int weekdayOf(int day, int month, int year);

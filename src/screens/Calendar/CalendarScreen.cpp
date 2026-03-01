@@ -4,6 +4,9 @@ void CalendarScreen::begin() {
     nextTriggered = false;
     display->clear();
     display->fontSet(u8g2_font_6x10_tr);
+
+    month = rtcManager->getMonth();
+    year = rtcManager->getYear();
 }
 
 void CalendarScreen::update() {
@@ -13,16 +16,31 @@ void CalendarScreen::update() {
 void CalendarScreen::draw() {
     display->clear();
 
-    int month = rtcManager->getMonth();
-    int year = rtcManager->getYear();
+    if (month == 0 && !dateUpdated) {
+        month = rtcManager->getMonth();
+        currentMonth = month;
+    }
+
+    if (year == 0 && !dateUpdated) {
+        year = rtcManager->getYear();
+        currentYear = year;
+    }
 
     char header[32];
-    snprintf(header, sizeof(header), "%02d/%04d", month, year);
-    display->printCentered(header, 0);
+
+    if (month != 0 && year != 0) {
+        const char* nameWeekDays[] = {"Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"};
+        snprintf(header, sizeof(header), "< %02d(%s)/%04d >", month, nameWeekDays[month - 1], year + 2000);
+        display->printCentered(header, 10);
+        dateUpdated = true;
+    } else {
+        snprintf(header, sizeof(header), "< %02d/%04d >", month, year + 2000);
+        display->printCentered(header, 10);
+    }
 
     const char* weekDays[] = {"D", "S", "T", "Q", "Q", "S", "S"};
     for (int i = 0; i < 7; i++) { 
-        display->drawText(7 + i * 17, 7 , weekDays[i]);
+        display->drawText(7 + i * 17, 23, weekDays[i]);
     }
 
     // Cálculo do primeiro dia do mês
@@ -31,9 +49,9 @@ void CalendarScreen::draw() {
 
     // Posição inicial
     int x0 = 4;
-    int y0 = 14 ;
+    int y0 = 32;
     int cellW = 17;
-    int cellH = 10;
+    int cellH = 8;
 
     int x = x0 + firstDow * cellW;
     int y = y0;
@@ -59,17 +77,38 @@ void CalendarScreen::end() {
 }
 
 void CalendarScreen::onUpPressed() {
-    nextTriggered = true;
+    month++;
+    if (month > 12) {
+        month = 1;
+        year++;
+    }
 }
 
 void CalendarScreen::onDownPressed() {
-    nextTriggered = true;
+    month--;
+    if (month <= 0) {
+        month = 12;
+        year--;
+    }
 }
 
 void CalendarScreen::onSelectPressed() {
     nextTriggered = true;
 }
 
+
+void CalendarScreen::onUpHeld() {
+    year++;
+}
+
+void CalendarScreen::onDownHeld() {
+    year--;
+}
+
+void CalendarScreen::onSelectHeld() {
+    month = currentMonth;
+    year = currentYear;
+}
 
 int CalendarScreen::daysInMonth(int month, int year) {
     if (month == 2) return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 29 : 28;
