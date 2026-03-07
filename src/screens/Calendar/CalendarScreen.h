@@ -35,6 +35,7 @@ private:
     int month;
     int year;
 
+    int currentDay;
     int currentMonth;
     int currentYear;
 

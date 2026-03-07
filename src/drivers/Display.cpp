@@ -24,8 +24,12 @@ void Display::drawText(int x, int y, const char* text) {
     u8g2.drawStr(x, y, text);
 }
 
+void Display::drawFrame(int x, int y, int w, int h) {
+    u8g2.drawFrame(x, y, w, h);
+}
+
 void Display::printCentered(const char* text, int y) {
-    int width = u8g2.getStrWidth(text);
+    int width = getWStr(text);
     int x = (128 - width) / 2;
     u8g2.drawStr(x, y, text);
 }

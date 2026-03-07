@@ -3,7 +3,7 @@
 void CalendarScreen::begin() {
     nextTriggered = false;
     display->clear();
-    display->fontSet(u8g2_font_6x10_tr);
+    display->fontSet(u8g2_font_6x10_tf);
 
     month = rtcManager->getMonth();
     year = rtcManager->getYear();
@@ -31,16 +31,17 @@ void CalendarScreen::draw() {
     if (month != 0 && year != 0) {
         const char* nameWeekDays[] = {"Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"};
         snprintf(header, sizeof(header), "< %02d(%s)/%04d >", month, nameWeekDays[month - 1], year + 2000);
-        display->printCentered(header, 10);
+        display->printCentered(header, 8);
+        currentDay = rtcManager->getDay();
         dateUpdated = true;
     } else {
         snprintf(header, sizeof(header), "< %02d/%04d >", month, year + 2000);
-        display->printCentered(header, 10);
+        display->printCentered(header, 8);
     }
 
     const char* weekDays[] = {"D", "S", "T", "Q", "Q", "S", "S"};
     for (int i = 0; i < 7; i++) { 
-        display->drawText(7 + i * 17, 23, weekDays[i]);
+        display->drawText(7 + i * 17, 18, weekDays[i]);
     }
 
     // Cálculo do primeiro dia do mês
@@ -49,17 +50,24 @@ void CalendarScreen::draw() {
 
     // Posição inicial
     int x0 = 4;
-    int y0 = 32;
+    int y0 = 28;
     int cellW = 17;
-    int cellH = 8;
+    int cellH = 9;
 
     int x = x0 + firstDow * cellW;
     int y = y0;
 
     for (int d = 1; d <= totalDays; d++) {
         char buf[4];
-        snprintf(buf, sizeof(buf), "%2d", d);
-        display->drawText(x, y, buf);
+        if (d == currentDay && month == currentMonth && year == currentYear) {
+            snprintf(buf, sizeof(buf), "%2d", d);
+            int largura = display->getWStr(buf);
+            display->drawText(x, y, buf);
+            display->drawFrame(x - 1, y - 9, largura + 3, 10);
+        } else {
+            snprintf(buf, sizeof(buf), "%2d", d);
+            display->drawText(x, y, buf);
+        }
 
         x += cellW;
         if ((firstDow + d) % 7 == 0) {

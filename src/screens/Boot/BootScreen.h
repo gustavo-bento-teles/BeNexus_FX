@@ -25,5 +25,5 @@ private:
     Screen* nextScreenPtr;
     bool nextTriggered = false;
     unsigned long startTime = 0;
-    const unsigned long bootDuration = 1000;
+    const unsigned long bootDuration = 500;
 };

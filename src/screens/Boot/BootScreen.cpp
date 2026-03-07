@@ -14,7 +14,7 @@ void BootScreen::begin() {
     display->fontSet(u8g2_font_9x15_mf);
     display->printCentered("BeNexus_FX", 32);
 
-    animator.add(new LineGrowAnimation(19, 36, display->getWStr("BeNexus_FX") - 17, 4, true, true));
+    animator.add(new LineGrowAnimation(19, 36, display->getWStr("BeNexus_FX") - 17, 5, true, true));
 
     display->fontSet(u8g2_font_ncenB08_tr);
     display->printCentered("by Gustavo Bento", 60);
