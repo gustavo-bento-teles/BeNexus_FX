@@ -2,10 +2,11 @@
 #include "screens/Screen.h"
 #include "input/ButtonEvent.h"
 #include "drivers/Display.h"
+#include "drivers/RTC.h"
 
 class ScreenManager {
 public:
-    explicit ScreenManager(Screen* initialScreen, Display* display);
+    explicit ScreenManager(Screen* initialScreen, Display* display, RTCManager* rtc);
 
     void begin();
     void update();
@@ -15,4 +16,5 @@ public:
 private:
     Screen* currentScreen;
     Display* display;
+    RTCManager* rtc;
 };

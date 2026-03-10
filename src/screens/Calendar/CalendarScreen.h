@@ -32,14 +32,12 @@ private:
     Screen* nextScreenPtr;
     bool nextTriggered;
 
-    int month;
-    int year;
-
     int currentDay;
     int currentMonth;
     int currentYear;
 
-    bool dateUpdated = false;
+    int month;
+    int year;
 
     int daysInMonth(int month, int year);
     int weekdayOf(int day, int month, int year);

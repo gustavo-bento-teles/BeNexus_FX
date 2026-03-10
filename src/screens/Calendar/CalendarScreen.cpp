@@ -5,26 +5,18 @@ void CalendarScreen::begin() {
     display->clear();
     display->fontSet(u8g2_font_6x10_tf);
 
-    month = rtcManager->getMonth();
-    year = rtcManager->getYear();
+    currentYear = rtcManager->getYear();
+    currentMonth = rtcManager->getMonth();
+    currentDay = rtcManager->getDay();
+
+    month = currentMonth;
+    year = currentYear;
 }
 
-void CalendarScreen::update() {
-    rtcManager->update();
-}
+void CalendarScreen::update() {}
 
 void CalendarScreen::draw() {
     display->clear();
-
-    if (month == 0 && !dateUpdated) {
-        month = rtcManager->getMonth();
-        currentMonth = month;
-    }
-
-    if (year == 0 && !dateUpdated) {
-        year = rtcManager->getYear();
-        currentYear = year;
-    }
 
     char header[32];
 
@@ -32,8 +24,6 @@ void CalendarScreen::draw() {
         const char* nameWeekDays[] = {"Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"};
         snprintf(header, sizeof(header), "< %02d(%s)/%04d >", month, nameWeekDays[month - 1], year + 2000);
         display->printCentered(header, 8);
-        currentDay = rtcManager->getDay();
-        dateUpdated = true;
     } else {
         snprintf(header, sizeof(header), "< %02d/%04d >", month, year + 2000);
         display->printCentered(header, 8);
@@ -44,11 +34,9 @@ void CalendarScreen::draw() {
         display->drawText(7 + i * 17, 18, weekDays[i]);
     }
 
-    // Cálculo do primeiro dia do mês
     int firstDow = weekdayOf(1, month, year);
     int totalDays = daysInMonth(month, year);
 
-    // Posição inicial
     int x0 = 4;
     int y0 = 28;
     int cellW = 17;
