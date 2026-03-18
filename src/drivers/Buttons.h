@@ -12,9 +12,9 @@ public:
     bool downPressed();
     bool selectPressed();
 
-    bool upHeld(uint16_t holdMs = 250);
-    bool downHeld(uint16_t holdMs = 250);
-    bool selectHeld(uint16_t holdMs = 250);
+    bool upHeld(uint16_t holdMs = 500);
+    bool downHeld(uint16_t holdMs = 500);
+    bool selectHeld(uint16_t holdMs = 500);
 
 private:
     Bounce btnUp, btnDown, btnSelect;
