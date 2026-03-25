@@ -19,13 +19,14 @@ public:
 
     Screen* nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
 
-    void setScreens(Screen* clk, Screen* calendar, Screen* wifi, Screen* tcp, Screen* ntp, Screen* flash) {
+    void setScreens(Screen* clk, Screen* calendar, Screen* wifi, Screen* tcp, Screen* ntp, Screen* flash, Screen* diagnostics) {
         clockScreen = clk;
         calendarScreen = calendar;
         wifiScreen = wifi;
         tcpScreen = tcp;
         ntpScreen = ntp;
         flashlightScreen = flash;
+        diagnosticsScreen = diagnostics;
     }
 
 protected:
@@ -40,6 +41,7 @@ private:
     Screen* tcpScreen;
     Screen* ntpScreen;
     Screen* flashlightScreen;
+    Screen* diagnosticsScreen;
 
     Display* display;
     Screen* nextScreenPtr;
@@ -50,14 +52,16 @@ private:
     int selectedIndex = 0;
     int offset = 0;
     const int numMaxVisible = 5;
-    
-    static constexpr const char* options[6] = {
+
+    static constexpr const char* options[7] = {
         "Relogio/Data",
         "Calendario",
         "Tela WiFi",
         "Tela TCP",
         "Tela NTP",
-        "Lanterna"
+        "Lanterna",
+        "Diagnosticos"
     };
-    static constexpr int numOptions = 6;
+
+    static constexpr int numOptions = 7;
 };
