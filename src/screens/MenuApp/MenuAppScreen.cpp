@@ -128,9 +128,5 @@ void MenuAppScreen::onSelectPressed() {
             nextScreenPtr = flashlightScreen;
             nextTriggered = true;
             break;
-        case 6:
-            nextScreenPtr = diagnosticsScreen;
-            nextTriggered = true;
-            break;
     }
 }

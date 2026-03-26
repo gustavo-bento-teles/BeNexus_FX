@@ -13,7 +13,6 @@
 #include "screens/TCP/TCPScreen.h"
 #include "screens/NTP/NTPScreen.h"
 #include "screens/Flashlight/FlashlightScreen.h"
-#include "screens/Diagnostics/DiagnosticsScreen.h"
 
 #include "core/ScreenManager.h"
 #include "input/InputManager.h"
@@ -35,7 +34,6 @@ OutputManager outputManager(lantern);
 InputManager inputManager(buttons);
 CommandService commandService(&outputManager);
 
-DiagnosticsScreen diagnosticsScreen(&display);
 MenuAppScreen menuAppScreen(&display);
 FlashlightScreen flashlightScreen(&display, &menuAppScreen, &outputManager);
 WiFiScreen wifiScreen(&display, &menuAppScreen);
@@ -50,9 +48,7 @@ ScreenManager screenManager(&bootScreen, &display, &rtc);
 void setup() {
     display.begin();
 
-    menuAppScreen.setScreens(&clockScreen, &calendarScreen, &wifiScreen, &tcpScreen, &ntpScreen, &flashlightScreen, &diagnosticsScreen);
-
-    diagnosticsScreen.setScreens(&menuAppScreen);
+    menuAppScreen.setScreens(&clockScreen, &calendarScreen, &wifiScreen, &tcpScreen, &ntpScreen, &flashlightScreen);
 
     screenManager.begin();
     inputManager.begin();
