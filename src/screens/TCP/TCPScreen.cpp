@@ -1,11 +1,9 @@
 #include "TCPScreen.h"
 #include "services/NetworkService.h"
 #include "services/TCPService.h"
-#include <Arduino.h>
 
 void TCPScreen::begin() {
     nextTriggered = false;
-    display->clear();
     display->fontSet(u8g2_font_6x10_tr);
     nextScreenPtr = menuAppScreen;
 }

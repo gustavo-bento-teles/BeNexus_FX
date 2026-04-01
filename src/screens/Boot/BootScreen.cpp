@@ -1,11 +1,7 @@
 #include "BootScreen.h"
 
-BootScreen::BootScreen(Display* disp, Screen* next)
-    : display(disp), nextScreenPtr(next) {}
-
 void BootScreen::begin() {
     display->displayOn(true);
-
     display->clear();
 
     display->fontSet(u8g2_font_6x10_tr);

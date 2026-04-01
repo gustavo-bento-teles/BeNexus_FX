@@ -26,7 +26,6 @@ const unsigned char epd_bitmap_lanternaLigada [] PROGMEM = {
 
 void FlashlightScreen::begin() {
     nextTriggered = false;
-    display->clear();
     display->fontSet(u8g2_font_6x10_tr);
 }
 

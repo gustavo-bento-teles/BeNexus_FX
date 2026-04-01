@@ -2,9 +2,7 @@
 
 void MenuAppScreen::begin() {
     nextTriggered = false;
-    display->clear();
     display->fontSet(u8g2_font_6x10_tr);
-    display->display();
 
     int visibleIndex = selectedIndex - offset;
 

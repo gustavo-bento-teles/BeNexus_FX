@@ -7,7 +7,6 @@ const char* password = "#-&S3nha";
 
 void WiFiScreen::begin() {
     nextTriggered = false;
-    display->clear();
     display->fontSet(u8g2_font_6x10_tr);
 }
 

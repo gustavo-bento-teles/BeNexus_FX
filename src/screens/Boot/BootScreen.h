@@ -7,7 +7,8 @@
 
 class BootScreen : public Screen {
 public:
-    BootScreen(Display* disp, Screen* next);
+    BootScreen(Display* disp, Screen* next)
+    : display(disp), nextScreenPtr(next) {}
 
     const char* name() override { return "BootScreen"; }
 
