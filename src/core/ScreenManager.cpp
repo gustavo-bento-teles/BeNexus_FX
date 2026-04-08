@@ -26,6 +26,8 @@ void ScreenManager::update() {
     }
 
     display->handleAutoOff();
+
+    yield();
 }
 
 void ScreenManager::draw() {

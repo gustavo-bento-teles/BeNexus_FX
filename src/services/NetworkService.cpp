@@ -28,8 +28,6 @@ void NetworkService::update() {
         case ConnectionState::FAILED:
             break;
     }
-
-    yield();
 }
 
 void NetworkService::connect(const char* ssid, const char* password) {
