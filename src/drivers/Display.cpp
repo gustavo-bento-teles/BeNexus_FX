@@ -28,6 +28,14 @@ void Display::drawFrame(int x, int y, int w, int h) {
     u8g2.drawFrame(x, y, w, h);
 }
 
+void Display::drawColorSet(uint8_t colorIndex) {
+    u8g2.setDrawColor(colorIndex);
+}
+
+void Display::drawBox(uint8_t x, uint8_t y, uint8_t w, uint8_t h) {
+    u8g2.drawBox(x, y, w, h);
+}
+
 void Display::printCentered(const char* text, int y) {
     int width = getWStr(text);
     int x = (128 - width) / 2;

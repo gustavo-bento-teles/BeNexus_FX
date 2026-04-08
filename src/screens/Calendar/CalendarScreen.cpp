@@ -38,8 +38,8 @@ void CalendarScreen::draw() {
 
     int x0 = 4;
     int y0 = 28;
-    int cellW = 17;
-    int cellH = 9;
+    int cellW = 18;
+    int cellH = 7;
 
     int x = x0 + firstDow * cellW;
     int y = y0;
@@ -49,8 +49,14 @@ void CalendarScreen::draw() {
         if (d == currentDay && month == currentMonth && year == currentYear) {
             snprintf(buf, sizeof(buf), "%2d", d);
             int largura = display->getWStr(buf);
+
+            display->drawColorSet(1);
+            display->drawBox(x - 1, y - 7, largura + 3, 7);
+
+            display->drawColorSet(0);
             display->drawText(x, y, buf);
-            display->drawFrame(x - 1, y - 9, largura + 3, 10);
+
+            display->drawColorSet(1);
         } else {
             snprintf(buf, sizeof(buf), "%2d", d);
             display->drawText(x, y, buf);
