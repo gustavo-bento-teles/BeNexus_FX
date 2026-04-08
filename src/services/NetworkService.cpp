@@ -1,40 +1,54 @@
 #include "NetworkService.h"
 #include <Arduino.h>
 
-bool NetworkService::tentandoConectar = false;
+ConnectionState NetworkService::state = ConnectionState::IDLE;
+unsigned long NetworkService::connectStartTime = 0;
 
 void NetworkService::begin() {
     WiFi.mode(WIFI_OFF);
 }
 
 void NetworkService::update() {
-    WiFiMode_t wifiMode = WiFi.getMode();
+    switch (state) {
+        case ConnectionState::CONNECTING:
+            if (WiFi.status() == WL_CONNECTED) {
+                state = ConnectionState::CONNECTED;
+            } else if (millis() - connectStartTime > timeout) {
+                disconnect(ConnectionState::FAILED);
+            }
+            break;
 
-    if (WiFi.status() != WL_CONNECTED && wifiMode != WIFI_OFF && !tentandoConectar) {
-        disconnect();
+        case ConnectionState::CONNECTED:
+            if (WiFi.status() != WL_CONNECTED) {
+                state = ConnectionState::IDLE;
+            }
+            break;
+
+        case ConnectionState::IDLE:
+        case ConnectionState::FAILED:
+            break;
     }
+
+    yield();
 }
 
 void NetworkService::connect(const char* ssid, const char* password) {
-    if (WiFi.status() == WL_CONNECTED) return;
+    if (state == ConnectionState::CONNECTING || WiFi.status() == WL_CONNECTED)
+        return;
 
-    tentandoConectar = true;
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
 
-    unsigned long start = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - start < 10000) {
-        delay(250);
-    }
-
-    tentandoConectar = false;
+    state = ConnectionState::CONNECTING;
+    connectStartTime = millis();
 }
 
-void NetworkService::disconnect() {
+void NetworkService::disconnect(ConnectionState newState) {
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
+    state = newState;
 }
 
 bool NetworkService::isConnected() {
-    return WiFi.status() == WL_CONNECTED;
+    return state == ConnectionState::CONNECTED;
 }
