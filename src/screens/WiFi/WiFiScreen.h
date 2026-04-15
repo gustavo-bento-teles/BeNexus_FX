@@ -3,6 +3,13 @@
 #include "drivers/Display.h"
 #include <ESP8266WiFi.h>
 
+enum class WiFiScreenState {
+    IDLE,
+    CONNECTED,
+    CONNECTING,
+    FAILED
+};
+
 class WiFiScreen : public Screen {
 public:
     WiFiScreen(Display* disp, Screen* next)
@@ -17,6 +24,8 @@ public:
 
     Screen* nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
 
+    uint8_t getState() const override { return static_cast<int>(screenState); }    
+
 protected:
     void onUpPressed() override;
     void onDownPressed() override;
@@ -26,4 +35,6 @@ private:
     Display* display;
     Screen* nextScreenPtr;
     bool nextTriggered;
+
+    WiFiScreenState screenState = WiFiScreenState::IDLE;
 };

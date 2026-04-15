@@ -3,6 +3,10 @@
 #include "drivers/Display.h"
 #include "output/OutputManager.h"
 
+enum class FlashScreenState {
+    IDLE
+};
+
 class FlashlightScreen : public Screen {
 public:
     FlashlightScreen(Display* disp, Screen* next, OutputManager* outMgr)
@@ -17,6 +21,8 @@ public:
 
     Screen* nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
 
+    uint8_t getState() const override { return static_cast<int>(screenState); }
+
 protected:
     void onUpPressed() override;
     void onDownPressed() override;
@@ -27,4 +33,6 @@ private:
     Screen* nextScreenPtr;
     OutputManager* output;
     bool nextTriggered;
+
+    FlashScreenState screenState = FlashScreenState::IDLE;
 };

@@ -5,6 +5,10 @@
 #include "screens/animations/Animator.h"
 #include "screens/animations/LineGrowAnimation.h"
 
+enum class MenuScreenState {
+    IDLE
+};
+
 class MenuAppScreen : public Screen {
 public:
     MenuAppScreen(Display* disp)
@@ -19,14 +23,15 @@ public:
 
     Screen* nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
 
-    void setScreens(Screen* clk, Screen* calendar, Screen* wifi, Screen* tcp, Screen* ntp, Screen* flash) {
+    void setScreens(Screen* clk, Screen* calendar, Screen* wifi, Screen* ntp, Screen* flash) {
         clockScreen = clk;
         calendarScreen = calendar;
         wifiScreen = wifi;
-        tcpScreen = tcp;
         ntpScreen = ntp;
         flashlightScreen = flash;
     }
+
+    uint8_t getState() const override { return static_cast<int>(screenState); }
 
 protected:
     void onUpPressed() override;
@@ -37,7 +42,6 @@ private:
     Screen* clockScreen;
     Screen* calendarScreen;
     Screen* wifiScreen;
-    Screen* tcpScreen;
     Screen* ntpScreen;
     Screen* flashlightScreen;
 
@@ -51,14 +55,15 @@ private:
     int offset = 0;
     const int numMaxVisible = 5;
 
-    static constexpr const char* options[6] = {
-        "Relogio/Data",
+    static constexpr const char* options[5] = {
+        "Relogio",
         "Calendario",
         "Tela WiFi",
-        "Tela TCP",
         "Tela NTP",
         "Lanterna"
     };
 
-    static constexpr int numOptions = 6;
+    static constexpr int numOptions = 5;
+
+    MenuScreenState screenState = MenuScreenState::IDLE;
 };

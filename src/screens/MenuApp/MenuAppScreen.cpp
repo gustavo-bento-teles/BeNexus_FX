@@ -115,14 +115,10 @@ void MenuAppScreen::onSelectPressed() {
             nextTriggered = true;
             break;
         case 3:
-            nextScreenPtr = tcpScreen;
-            nextTriggered = true;
-            break;
-        case 4:
             nextScreenPtr = ntpScreen;
             nextTriggered = true;
             break;
-        case 5:
+        case 4:
             nextScreenPtr = flashlightScreen;
             nextTriggered = true;
             break;

@@ -19,8 +19,16 @@ void ScreenManager::update() {
         Screen* next = currentScreen->nextScreen();
         if (next && next != currentScreen) {
             currentScreen->end();
+            currentStateScreen = -1;
             currentScreen = next;
             currentScreen->begin();
+            display->resetAutoOff();
+        }
+
+        uint8_t screenState = currentScreen->getState();
+
+        if (screenState != currentStateScreen) {
+            currentStateScreen = screenState;
             display->resetAutoOff();
         }
     }

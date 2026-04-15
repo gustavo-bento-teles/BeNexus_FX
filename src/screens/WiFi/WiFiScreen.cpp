@@ -19,6 +19,8 @@ void WiFiScreen::draw() {
 
     switch (state) {
         case ConnectionState::CONNECTED: {
+            screenState = WiFiScreenState::CONNECTED;
+
             String ip = WiFi.localIP().toString();
             int rssi = WiFi.RSSI();
 
@@ -37,6 +39,8 @@ void WiFiScreen::draw() {
         }
 
         case ConnectionState::CONNECTING: {
+            screenState = WiFiScreenState::CONNECTING;
+
             static int dots = 0;
             static unsigned long lastUpdate = 0;
 
@@ -59,12 +63,16 @@ void WiFiScreen::draw() {
         }
 
         case ConnectionState::FAILED:
+            screenState = WiFiScreenState::FAILED;
+
             display->printCentered("Falha ao conectar", 20);
             display->printCentered("[Tentar novamente]", 32);
             break;
 
         case ConnectionState::IDLE:
         default:
+            screenState = WiFiScreenState::IDLE;
+
             display->printCentered("Tela WiFi", 8);
             display->printCentered("[Ligar WiFi]", 38);
             break;

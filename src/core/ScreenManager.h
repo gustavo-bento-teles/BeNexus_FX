@@ -17,4 +17,6 @@ private:
     Screen* currentScreen;
     Display* display;
     RTCManager* rtc;
+
+    uint8_t currentStateScreen = -1;
 };

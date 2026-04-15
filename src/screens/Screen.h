@@ -14,6 +14,8 @@ public:
     virtual void handleInput(ButtonEvent ev);
     virtual Screen* nextScreen() { return nullptr; }
 
+    virtual uint8_t getState() const = 0;
+
 protected:
     virtual void onUpPressed() {}
     virtual void onDownPressed() {}

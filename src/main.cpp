@@ -10,14 +10,12 @@
 #include "screens/Calendar/CalendarScreen.h"
 #include "screens/MenuApp/MenuAppScreen.h"
 #include "screens/WiFi/WiFiScreen.h"
-#include "screens/TCP/TCPScreen.h"
 #include "screens/NTP/NTPScreen.h"
 #include "screens/Flashlight/FlashlightScreen.h"
 
 #include "core/ScreenManager.h"
 #include "input/InputManager.h"
 #include "output/OutputManager.h"
-#include "services/CommandService.h"
 
 const uint8_t PIN_UP_BTN     = 12;
 const uint8_t PIN_DOWN_BTN   = 13;
@@ -32,12 +30,10 @@ Lantern lantern(PIN_LANTERN);
 
 OutputManager outputManager(lantern);
 InputManager inputManager(buttons);
-CommandService commandService(&outputManager);
 
 MenuAppScreen menuAppScreen(&display);
 FlashlightScreen flashlightScreen(&display, &menuAppScreen, &outputManager);
 WiFiScreen wifiScreen(&display, &menuAppScreen);
-TCPScreen tcpScreen(&display, &menuAppScreen, &wifiScreen, &commandService);
 NTPScreen ntpScreen(&display, &rtc, &menuAppScreen, &wifiScreen);
 CalendarScreen calendarScreen(&display, &rtc, &menuAppScreen);
 ClockScreen clockScreen(&display, &rtc, &menuAppScreen);
@@ -48,7 +44,7 @@ ScreenManager screenManager(&bootScreen, &display, &rtc);
 void setup() {
     display.begin();
 
-    menuAppScreen.setScreens(&clockScreen, &calendarScreen, &wifiScreen, &tcpScreen, &ntpScreen, &flashlightScreen);
+    menuAppScreen.setScreens(&clockScreen, &calendarScreen, &wifiScreen, &ntpScreen, &flashlightScreen);
 
     screenManager.begin();
     inputManager.begin();
