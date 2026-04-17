@@ -3,8 +3,12 @@
 #include "drivers/Display.h"
 #include <ESP8266WiFi.h>
 
-#include "screens/animations/Animator.h"
-#include "screens/animations/LineGrowAnimation.h"
+enum class WiFiScreenState {
+    IDLE,
+    CONNECTED,
+    CONNECTING,
+    FAILED
+};
 
 class WiFiScreen : public Screen {
 public:
@@ -20,6 +24,8 @@ public:
 
     Screen* nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
 
+    uint8_t getState() const override { return static_cast<int>(screenState); }    
+
 protected:
     void onUpPressed() override;
     void onDownPressed() override;
@@ -29,4 +35,6 @@ private:
     Display* display;
     Screen* nextScreenPtr;
     bool nextTriggered;
+
+    WiFiScreenState screenState = WiFiScreenState::IDLE;
 };

@@ -39,7 +39,7 @@ CalendarScreen calendarScreen(&display, &rtc, &menuAppScreen);
 ClockScreen clockScreen(&display, &rtc, &menuAppScreen);
 BootScreen bootScreen(&display, &menuAppScreen);
 
-ScreenManager screenManager(&bootScreen, &display);
+ScreenManager screenManager(&bootScreen, &display, &rtc);
 
 void setup() {
     display.begin();

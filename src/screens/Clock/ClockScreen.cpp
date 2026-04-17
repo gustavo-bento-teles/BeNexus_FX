@@ -2,13 +2,9 @@
 
 void ClockScreen::begin() {
     nextTriggered = false;
-    display->clear();
-    display->fontSet(u8g2_font_6x10_tr);
 }
 
-void ClockScreen::update() {
-    rtcManager->update();
-}
+void ClockScreen::update() {}
 
 void ClockScreen::draw() {
     display->clear();

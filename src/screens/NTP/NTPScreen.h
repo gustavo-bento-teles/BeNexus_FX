@@ -5,13 +5,16 @@
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 
-#include "screens/animations/LineGrowAnimation.h"
-#include "screens/animations/Animator.h"
+enum class NTPScreenState {
+    CONNECTED,
+    DISCONNECTED,
+    UPDATING
+};
 
 class NTPScreen : public Screen {
 public:
     NTPScreen(Display* disp, RTCManager* rtc, Screen* next, Screen* wifi)
-        : display(disp),  rtcManager(rtc), nextScreenPtr(next), wifiScreen(wifi), nextTriggered(false) {}
+        : display(disp),  rtcManager(rtc), nextScreenPtr(next), wifiScreen(wifi), menuAppScreen(next), nextTriggered(false) {}
 
     const char* name() override { return "NTPScreen"; }
 
@@ -21,6 +24,8 @@ public:
     void end() override;
 
     Screen* nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
+
+    uint8_t getState() const override { return static_cast<int>(screenState); } 
 
 protected:
     void onUpPressed() override;
@@ -35,11 +40,13 @@ private:
     Screen* nextScreenPtr;
 
     Screen* wifiScreen;
-    Screen* menuAppScreen = nextScreenPtr;
+    Screen* menuAppScreen;
 
     bool nextTriggered;
     bool firstClient = true;
 
     WiFiUDP ntpUDP;
     NTPClient timeClient = NTPClient(ntpUDP, "pool.ntp.org", -3 * 3600, 60000);
+
+    NTPScreenState screenState = NTPScreenState::DISCONNECTED;
 };

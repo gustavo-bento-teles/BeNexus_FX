@@ -2,46 +2,65 @@
 
 void CalendarScreen::begin() {
     nextTriggered = false;
-    display->clear();
-    display->fontSet(u8g2_font_6x10_tr);
+    display->fontSet(u8g2_font_6x10_tf);
+
+    currentYear = rtcManager->getYear();
+    currentMonth = rtcManager->getMonth();
+    currentDay = rtcManager->getDay();
+
+    month = currentMonth;
+    year = currentYear;
 }
 
-void CalendarScreen::update() {
-    rtcManager->update();
-}
+void CalendarScreen::update() {}
 
 void CalendarScreen::draw() {
     display->clear();
 
-    int month = rtcManager->getMonth();
-    int year = rtcManager->getYear();
-
     char header[32];
-    snprintf(header, sizeof(header), "%02d/%04d", month, year);
-    display->printCentered(header, 0);
+
+    if (month != 0 && year != 0) {
+        const char* nameWeekDays[] = {"Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"};
+        snprintf(header, sizeof(header), "< %02d(%s)/%04d >", month, nameWeekDays[month - 1], year + 2000);
+        display->printCentered(header, 8);
+    } else {
+        snprintf(header, sizeof(header), "< %02d/%04d >", month, year + 2000);
+        display->printCentered(header, 8);
+    }
 
     const char* weekDays[] = {"D", "S", "T", "Q", "Q", "S", "S"};
     for (int i = 0; i < 7; i++) { 
-        display->drawText(7 + i * 17, 7 , weekDays[i]);
+        display->drawText(7 + i * 17, 18, weekDays[i]);
     }
 
-    // Cálculo do primeiro dia do mês
     int firstDow = weekdayOf(1, month, year);
     int totalDays = daysInMonth(month, year);
 
-    // Posição inicial
     int x0 = 4;
-    int y0 = 14 ;
-    int cellW = 17;
-    int cellH = 10;
+    int y0 = 28;
+    int cellW = 18;
+    int cellH = 7;
 
     int x = x0 + firstDow * cellW;
     int y = y0;
 
     for (int d = 1; d <= totalDays; d++) {
         char buf[4];
-        snprintf(buf, sizeof(buf), "%2d", d);
-        display->drawText(x, y, buf);
+        if (d == currentDay && month == currentMonth && year == currentYear) {
+            snprintf(buf, sizeof(buf), "%2d", d);
+            int largura = display->getWStr(buf);
+
+            display->drawColorSet(1);
+            display->drawBox(x - 1, y - 7, largura + 3, 7);
+
+            display->drawColorSet(0);
+            display->drawText(x, y, buf);
+
+            display->drawColorSet(1);
+        } else {
+            snprintf(buf, sizeof(buf), "%2d", d);
+            display->drawText(x, y, buf);
+        }
 
         x += cellW;
         if ((firstDow + d) % 7 == 0) {
@@ -59,17 +78,38 @@ void CalendarScreen::end() {
 }
 
 void CalendarScreen::onUpPressed() {
-    nextTriggered = true;
+    month++;
+    if (month > 12) {
+        month = 1;
+        year++;
+    }
 }
 
 void CalendarScreen::onDownPressed() {
-    nextTriggered = true;
+    month--;
+    if (month <= 0) {
+        month = 12;
+        year--;
+    }
 }
 
 void CalendarScreen::onSelectPressed() {
     nextTriggered = true;
 }
 
+
+void CalendarScreen::onUpHeld() {
+    year++;
+}
+
+void CalendarScreen::onDownHeld() {
+    year--;
+}
+
+void CalendarScreen::onSelectHeld() {
+    month = currentMonth;
+    year = currentYear;
+}
 
 int CalendarScreen::daysInMonth(int month, int year) {
     if (month == 2) return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 29 : 28;

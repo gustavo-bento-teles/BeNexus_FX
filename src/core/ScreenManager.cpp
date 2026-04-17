@@ -1,28 +1,41 @@
 #include "ScreenManager.h"
 #include "services/NetworkService.h"
 
-ScreenManager::ScreenManager(Screen* initialScreen, Display* display)
-    : currentScreen(initialScreen), display(display) {}
+ScreenManager::ScreenManager(Screen* initialScreen, Display* display, RTCManager* rtc)
+    : currentScreen(initialScreen), display(display), rtc(rtc) {}
 
 void ScreenManager::begin() {
     if (currentScreen) currentScreen->begin();
+    
+    rtc->begin();
 }
 
 void ScreenManager::update() {
+    NetworkService::update();
+    rtc->update();
+
     if (currentScreen) {
         currentScreen->update();
         Screen* next = currentScreen->nextScreen();
         if (next && next != currentScreen) {
             currentScreen->end();
+            currentStateScreen = -1;
             currentScreen = next;
             currentScreen->begin();
             display->resetAutoOff();
         }
+
+        uint8_t screenState = currentScreen->getState();
+
+        if (screenState != currentStateScreen) {
+            currentStateScreen = screenState;
+            display->resetAutoOff();
+        }
     }
-    
-    NetworkService::update();
 
     display->handleAutoOff();
+
+    yield();
 }
 
 void ScreenManager::draw() {

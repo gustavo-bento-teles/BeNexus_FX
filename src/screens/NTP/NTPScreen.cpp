@@ -4,9 +4,7 @@
 
 void NTPScreen::begin() {
     nextTriggered = false;
-    display->clear();
     display->fontSet(u8g2_font_6x10_tr);
-
     nextScreenPtr = menuAppScreen;
 }
 
@@ -18,8 +16,12 @@ void NTPScreen::draw() {
     display->printCentered("Tela NTP", 8);
 
     if (NetworkService::isConnected()) {
+        screenState = NTPScreenState::CONNECTED;
+
         display->printCentered("[Atualizar NTP]", 38);
     } else {
+        screenState = NTPScreenState::DISCONNECTED;
+
         display->printCentered("Sem WiFi disponivel!", 30);
         display->printCentered("Use [tela WiFi]", 45);
         display->printCentered("para conectar", 55);
@@ -51,6 +53,8 @@ void NTPScreen::onSelectPressed() {
 }
 
 void NTPScreen::atualizarNTP() {
+    screenState = NTPScreenState::UPDATING;
+
     display->clear();
     display->printCentered("Atualizando NTP...", 32);
     display->printCentered("Aguarde...", 45);

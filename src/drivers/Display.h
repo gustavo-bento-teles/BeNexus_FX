@@ -8,6 +8,9 @@ public:
     void display();
     int getWStr(const char* text);
     void drawText(int x, int y, const char* text);
+    void drawFrame(int x, int y, int w, int h);
+    void drawColorSet(uint8_t colorIndex);
+    void drawBox(uint8_t x, uint8_t y, uint8_t w, uint8_t h);
     void printCentered(const char* text, int yOffset = 0);
     void fontSet(const uint8_t *font);
     void setDisplayContrast(int contrastLevel);

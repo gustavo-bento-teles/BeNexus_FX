@@ -5,6 +5,10 @@
 #include "screens/animations/Animator.h"
 #include "screens/animations/LineGrowAnimation.h"
 
+enum class MenuScreenState {
+    IDLE
+};
+
 class MenuAppScreen : public Screen {
 public:
     MenuAppScreen(Display* disp)
@@ -27,6 +31,8 @@ public:
         flashlightScreen = flash;
     }
 
+    uint8_t getState() const override { return static_cast<int>(screenState); }
+
 protected:
     void onUpPressed() override;
     void onDownPressed() override;
@@ -40,18 +46,24 @@ private:
     Screen* flashlightScreen;
 
     Display* display;
-    int selectedIndex = 0;
     Screen* nextScreenPtr;
     bool nextTriggered;
 
     Animator animator;
-    
+
+    int selectedIndex = 0;
+    int offset = 0;
+    const int numMaxVisible = 5;
+
     static constexpr const char* options[5] = {
-        "Relogio/Data",
+        "Relogio",
         "Calendario",
         "Tela WiFi",
         "Tela NTP",
         "Lanterna"
     };
+
     static constexpr int numOptions = 5;
+
+    MenuScreenState screenState = MenuScreenState::IDLE;
 };

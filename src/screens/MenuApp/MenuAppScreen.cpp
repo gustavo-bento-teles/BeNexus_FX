@@ -2,11 +2,20 @@
 
 void MenuAppScreen::begin() {
     nextTriggered = false;
-    display->clear();
     display->fontSet(u8g2_font_6x10_tr);
-    display->display();
 
-    animator.add(new LineGrowAnimation(22, 12 + (selectedIndex * 12), display->getWStr(options[selectedIndex]) - 19, 3, true, true));
+    int visibleIndex = selectedIndex - offset;
+
+    animator.add(
+        new LineGrowAnimation(
+            22,
+            12 + (visibleIndex * 12),
+            display->getWStr(options[selectedIndex]) - 19,
+            3,
+            true,
+            true
+        )
+    );
 }
 
 void MenuAppScreen::update() {
@@ -21,11 +30,16 @@ void MenuAppScreen::draw() {
     display->fontSet(u8g2_font_6x10_tr);
 
     int y = 10;
-    for (int i = 0; i < numOptions; i++) {
-        String line = (i == selectedIndex) ? "> " : "  ";
-        line += options[i];
+    for (int i = 0; i < numMaxVisible; i++) {
+        int index = offset + i;
+        if (index >= numOptions) break;
+
+        String line = (index == selectedIndex) ? "> " : "  ";
+        line += options[index];
+
         display->drawText(10, y + (i * 12), line.c_str());
     }
+
 
     display->display();
 }
@@ -39,21 +53,51 @@ void MenuAppScreen::end() {
 void MenuAppScreen::onUpPressed() {
     if (selectedIndex > 0) {
         selectedIndex--;
+        if (selectedIndex < offset) {
+            offset--;
+        }
     } else {
         selectedIndex = numOptions - 1;
+        offset = max(0, numOptions - numMaxVisible);
     }
 
-    animator.add(new LineGrowAnimation(22, 12 + (selectedIndex * 12), display->getWStr(options[selectedIndex]) - 19, 3, true, true));
+    int visibleIndex = selectedIndex - offset;
+
+    animator.add(
+        new LineGrowAnimation(
+            22,
+            12 + (visibleIndex * 12),
+            display->getWStr(options[selectedIndex]) - 19,
+            3,
+            true,
+            true
+        )
+    );
 }
 
 void MenuAppScreen::onDownPressed() {
     if (selectedIndex < numOptions - 1) {
         selectedIndex++;
+        if (selectedIndex > (numMaxVisible - 1 + offset)) {
+            offset++;
+        }
     } else {
         selectedIndex = 0;
+        offset = 0;
     }
 
-    animator.add(new LineGrowAnimation(22, 12 + (selectedIndex * 12), display->getWStr(options[selectedIndex]) - 19, 3, true, true));
+    int visibleIndex = selectedIndex - offset;
+
+    animator.add(
+        new LineGrowAnimation(
+            22,
+            12 + (visibleIndex * 12),
+            display->getWStr(options[selectedIndex]) - 19,
+            3,
+            true,
+            true
+        )
+    );
 }
 
 void MenuAppScreen::onSelectPressed() {

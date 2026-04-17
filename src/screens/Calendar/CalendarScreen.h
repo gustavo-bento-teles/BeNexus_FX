@@ -3,6 +3,10 @@
 #include "drivers/Display.h"
 #include "drivers/RTC.h"
 
+enum class CalendarScreenState {
+    IDLE
+};
+
 class CalendarScreen : public Screen {
 public:
     CalendarScreen(Display* disp, RTCManager* rtc, Screen* next)
@@ -17,10 +21,16 @@ public:
 
     Screen* nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
 
+    uint8_t getState() const override { return static_cast<int>(screenState); }
+
 protected:
     void onSelectPressed() override;
     void onUpPressed() override;
     void onDownPressed() override;
+
+    void onSelectHeld() override;
+    void onUpHeld() override;
+    void onDownHeld() override;
 
 private:
     Display* display;
@@ -28,6 +38,15 @@ private:
     Screen* nextScreenPtr;
     bool nextTriggered;
 
+    int currentDay;
+    int currentMonth;
+    int currentYear;
+
+    int month;
+    int year;
+
     int daysInMonth(int month, int year);
     int weekdayOf(int day, int month, int year);
+
+    CalendarScreenState screenState = CalendarScreenState::IDLE;
 };

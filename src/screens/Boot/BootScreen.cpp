@@ -1,20 +1,16 @@
 #include "BootScreen.h"
 
-BootScreen::BootScreen(Display* disp, Screen* next)
-    : display(disp), nextScreenPtr(next) {}
-
 void BootScreen::begin() {
     display->displayOn(true);
-
     display->clear();
 
     display->fontSet(u8g2_font_6x10_tr);
-    display->printCentered("v2.3.2", 10);
+    display->printCentered("v2.4.0-stable", 10);
     
     display->fontSet(u8g2_font_9x15_mf);
     display->printCentered("BeNexus_FX", 32);
 
-    animator.add(new LineGrowAnimation(19, 36, display->getWStr("BeNexus_FX") - 17, 4, true, true));
+    animator.add(new LineGrowAnimation(19, 36, display->getWStr("BeNexus_FX") - 17, 5, true, true));
 
     display->fontSet(u8g2_font_ncenB08_tr);
     display->printCentered("by Gustavo Bento", 60);
