@@ -14,6 +14,27 @@ O BeNexus_FX é um firmware modular para ESP8266, projetado em camadas com separ
 
 ---
 
+## Imagens de funcionamento
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="docs/img/menu.jpg" width="200"><br>
+      <sub>Menu</sub>
+    </td>
+    <td align="center">
+      <img src="docs/img/wifi-connected.jpg" width="200"><br>
+      <sub>WiFi</sub>
+    </td>
+    <td align="center">
+      <img src="docs/img/boot.jpg" width="200"><br>
+      <sub>Boot</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
 ## 🏗️ Arquitetura do Sistema
 
 ```
