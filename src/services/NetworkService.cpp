@@ -26,6 +26,9 @@ void NetworkService::update() {
 
         case ConnectionState::IDLE:
         case ConnectionState::FAILED:
+            if (WiFi.status() != WL_CONNECTED && WiFi.getMode() != WIFI_OFF) {
+                disconnect();
+            }
             break;
     }
 }
