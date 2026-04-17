@@ -1,39 +1,88 @@
-# 🛠️ Guia de Desenvolvimento - BeNexus_FX
+# 🛠️ Guia de Desenvolvimento — BeNexus_FX
+
+Este guia cobre os padrões e passos necessários para estender o projeto: adicionar novos drivers de hardware, criar telas, implementar animações e seguir as convenções do codebase.
+
+---
 
 ## 📋 Índice
-1. [Adicionando Novos Drivers](#-adicionando-novos-drivers)
-2. [Criando Novas Telas](#%EF%B8%8F-criando-novas-telas)
-3. [Sistema de Animações](#-sistema-de-animações)
-4. [Boas Práticas](#-boas-práticas)
+
+1. [Estrutura de Arquivos](#-estrutura-de-arquivos)
+2. [Adicionando Novos Drivers](#-adicionando-novos-drivers)
+3. [Criando Novas Telas](#%EF%B8%8F-criando-novas-telas)
+4. [Sistema de Animações](#-sistema-de-animações)
+5. [Boas Práticas](#-boas-práticas)
+6. [Checklists](#-checklists)
+7. [Debug Tips](#-debug-tips)
+
+---
+
+## 📁 Estrutura de Arquivos
+
+```
+src/
+├── main.cpp
+├── core/
+│   └── ScreenManager.{h,cpp}
+├── drivers/
+│   ├── Display.{h,cpp}
+│   ├── RTC.{h,cpp}
+│   ├── Buttons.{h,cpp}
+│   ├── Lantern.{h,cpp}
+│   └── <NovoDriver>.{h,cpp}      ← Novos drivers aqui
+├── screens/
+│   ├── Screen.{h,cpp}            ← Interface base
+│   ├── animations/
+│   │   ├── Animation.h
+│   │   ├── Animator.h
+│   │   ├── LineGrowAnimation.h
+│   │   └── <NovaAnimacao>.h      ← Novas animações aqui
+│   ├── Boot/
+│   │   └── BootScreen.{h,cpp}
+│   ├── MenuApp/
+│   │   └── MenuAppScreen.{h,cpp}
+│   ├── Clock/
+│   ├── Calendar/
+│   ├── WiFi/
+│   ├── NTP/
+│   ├── Flashlight/
+│   └── <NovaTela>/
+│       └── <NovaTela>Screen.{h,cpp}   ← Novas telas aqui
+├── input/
+│   ├── InputManager.{h,cpp}
+│   └── ButtonEvent.h
+├── output/
+│   └── OutputManager.{h,cpp}
+└── services/
+    └── NetworkService.{h,cpp}
+```
 
 ---
 
 ## 🔌 Adicionando Novos Drivers
 
-### Estrutura Base
-
-Todo driver deve seguir o padrão de **arquivo duplo** (.h + .cpp) e implementar ao menos um método `begin()` para inicialização.
+Todo driver deve seguir o padrão de **arquivo duplo** (`.h` + `.cpp`) e implementar ao menos `begin()` para inicialização.
 
 ### Passo a Passo
 
-#### 1️⃣ Criar os Arquivos do Driver
+#### 1. Criar os Arquivos do Driver
 
 **Exemplo: Buzzer**
 
-**`drivers/Buzzer.h`**
+**`src/drivers/Buzzer.h`**
 ```cpp
 #pragma once
 #include <Arduino.h>
 
 class Buzzer {
 public:
-    Buzzer(uint8_t pin);
-    
+    explicit Buzzer(uint8_t pin);
+
     void begin();
     void beep(uint16_t frequency, uint16_t duration);
     void playTone(uint16_t frequency);
     void stopTone();
     bool isPlaying() const;
+    void update(); // Gerencia auto-stop por millis()
 
 private:
     uint8_t pin;
@@ -42,11 +91,11 @@ private:
 };
 ```
 
-**`drivers/Buzzer.cpp`**
+**`src/drivers/Buzzer.cpp`**
 ```cpp
 #include "Buzzer.h"
 
-Buzzer::Buzzer(uint8_t buzzerPin) 
+Buzzer::Buzzer(uint8_t buzzerPin)
     : pin(buzzerPin) {}
 
 void Buzzer::begin() {
@@ -70,34 +119,34 @@ void Buzzer::stopTone() {
     playing = false;
 }
 
+void Buzzer::update() {
+    if (playing && millis() >= stopTime) {
+        stopTone();
+    }
+}
+
 bool Buzzer::isPlaying() const {
     return playing;
 }
 ```
 
-#### 2️⃣ Classificar o Driver (Input ou Output)
+#### 2. Classificar o Driver (Input ou Output)
 
-**Para dispositivos de SAÍDA** (LED, Buzzer, Motor, etc):
-- Adicionar ao **OutputManager**
+- **Dispositivos de SAÍDA** (LED, Buzzer, Motor): integrar ao `OutputManager`
+- **Dispositivos de ENTRADA** (sensores, botões extras): integrar ao `InputManager`
 
-**Para dispositivos de ENTRADA** (Sensores, Botões extras, etc):
-- Adicionar ao **InputManager**
+#### 3. Integrar no Manager Correspondente
 
-#### 3️⃣ Integrar no Manager Correspondente
-
-**Exemplo: OutputManager com Buzzer**
-
-**`output/OutputManager.h`**
+**`src/output/OutputManager.h`** — adicionar referência:
 ```cpp
 #pragma once
 #include "drivers/Lantern.h"
-#include "drivers/Buzzer.h"  // ← Adicionar include
+#include "drivers/Buzzer.h"  // ← novo include
 
 class OutputManager {
 public:
-    // Adicionar referência no construtor
-    explicit OutputManager(Lantern& lantern, Buzzer& buzzer);
-    
+    explicit OutputManager(Lantern& lantern, Buzzer& buzzer); // ← atualizar construtor
+
     void begin();
     void update();
 
@@ -105,8 +154,8 @@ public:
     void setLantern(bool on);
     void toggleLantern();
     bool isLanternOn() const;
-    
-    // Buzzer - adicionar métodos de abstração
+
+    // Buzzer
     void playBeep(uint16_t freq, uint16_t duration);
     void playTone(uint16_t freq);
     void stopSound();
@@ -114,28 +163,26 @@ public:
 
 private:
     Lantern& lantern;
-    Buzzer& buzzer;  // ← Adicionar referência
+    Buzzer& buzzer;  // ← nova referência
 };
 ```
 
-**`output/OutputManager.cpp`**
+**`src/output/OutputManager.cpp`**:
 ```cpp
 #include "output/OutputManager.h"
 
-// Atualizar construtor
 OutputManager::OutputManager(Lantern& l, Buzzer& b)
     : lantern(l), buzzer(b) {}
 
 void OutputManager::begin() {
     lantern.begin();
-    buzzer.begin();  // ← Adicionar inicialização
+    buzzer.begin();  // ← inicializa novo driver
 }
 
 void OutputManager::update() {
-    // Atualizar lógica se necessário
+    buzzer.update(); // ← propaga update se necessário
 }
 
-// Implementar métodos de abstração
 void OutputManager::playBeep(uint16_t freq, uint16_t duration) {
     buzzer.beep(freq, duration);
 }
@@ -151,30 +198,25 @@ void OutputManager::stopSound() {
 bool OutputManager::isBuzzerPlaying() const {
     return buzzer.isPlaying();
 }
-
-// Métodos existentes da Lantern...
 ```
 
-#### 4️⃣ Atualizar main.cpp
+#### 4. Atualizar main.cpp
 
 ```cpp
-#include "drivers/Buzzer.h"  // ← Adicionar include
+#include "drivers/Buzzer.h"
 
-const uint8_t PIN_BUZZER = 15;  // ← Definir pino
+const uint8_t PIN_BUZZER = 15;
 
-// Criar instância
 Buzzer buzzer(PIN_BUZZER);
-
-// Atualizar construtor do OutputManager
-OutputManager outputManager(lantern, buzzer);
+OutputManager outputManager(lantern, buzzer); // ← atualizar construtor
 
 void setup() {
-    // ... resto do código
-    outputManager.begin();  // Já vai inicializar o buzzer também
+    // ...
+    outputManager.begin(); // já inicializa o buzzer internamente
 }
 ```
 
-### 📊 Diagrama de Fluxo
+### Diagrama de Integração
 
 ```
 ┌─────────────────┐
@@ -182,18 +224,18 @@ void setup() {
 └────────┬────────┘
          │
     ┌────▼────┐
-    │ Driver  │  (Buzzer.h/cpp)
-    │ .begin()│
-    │ .beep() │
+    │ Driver  │  Buzzer.{h,cpp}
+    │ begin() │
+    │ update()│
     └────┬────┘
          │
   ┌──────▼──────────┐
-  │ OutputManager   │  (camada de abstração)
-  │ .playBeep()     │
+  │ OutputManager   │  camada de abstração
+  │ playBeep()      │
   └──────┬──────────┘
          │
     ┌────▼─────┐
-    │ Screens  │  (uso nas telas)
+    │  Screens │  consomem via OutputManager*
     └──────────┘
 ```
 
@@ -203,49 +245,47 @@ void setup() {
 
 ### Interface Obrigatória
 
-Toda tela **DEVE** implementar a interface `Screen`:
+Toda tela **deve** herdar de `Screen` e implementar obrigatoriamente `draw()` e `getState()`.
 
-**`screens/Screen.h`**
 ```cpp
-#pragma once
-#include "input/InputManager.h"
-
+// src/screens/Screen.h
 class Screen {
 public:
-    virtual ~Screen() {}
-
-    virtual const char* name() { return "Unnamed"; }
-
-    virtual void begin() {}        // Inicialização
-    virtual void end() {}          // Limpeza
-    virtual void update() {}       // Lógica (chamado todo frame)
-    virtual void draw() = 0;       // Renderização (obrigatório!)
-    virtual void handleInput(ButtonEvent ev);  // Entrada
-    virtual Screen* nextScreen() { return nullptr; }  // Navegação
+    virtual const char* name()   { return "Unnamed"; }
+    virtual void begin()         {}   // chamado ao entrar
+    virtual void end()           {}   // chamado ao sair
+    virtual void update()        {}   // lógica por frame
+    virtual void draw() = 0;         // OBRIGATÓRIO
+    virtual void handleInput(ButtonEvent ev);  // dispatch automático
+    virtual Screen* nextScreen() { return nullptr; }
+    virtual uint8_t getState() const = 0; // OBRIGATÓRIO
 
 protected:
-    // Callbacks de botões (override opcional)
-    virtual void onUpPressed() {}
-    virtual void onDownPressed() {}
-    virtual void onSelectPressed() {}
-
-    virtual void onUpHeld() {}
-    virtual void onDownHeld() {}
-    virtual void onSelectHeld() {}
+    virtual void onUpPressed()    {}
+    virtual void onDownPressed()  {}
+    virtual void onSelectPressed(){}
+    virtual void onUpHeld()       {}
+    virtual void onDownHeld()     {}
+    virtual void onSelectHeld()   {}
 };
 ```
 
 ### Passo a Passo
 
-#### 1️⃣ Criar Arquivos da Tela
+#### 1. Criar os Arquivos da Tela
 
 **Exemplo: Cronômetro**
 
-**`screens/Stopwatch/StopwatchScreen.h`**
+**`src/screens/Stopwatch/StopwatchScreen.h`**
 ```cpp
 #pragma once
 #include "screens/Screen.h"
 #include "drivers/Display.h"
+
+enum class StopwatchState {
+    STOPPED,
+    RUNNING
+};
 
 class StopwatchScreen : public Screen {
 public:
@@ -253,32 +293,35 @@ public:
 
     const char* name() override { return "StopwatchScreen"; }
 
-    void begin() override;
+    void begin()  override;
     void update() override;
-    void draw() override;
-    void end() override;
-    
+    void draw()   override;
+    void end()    override;
+
     Screen* nextScreen() override;
+    uint8_t getState() const override { return static_cast<uint8_t>(screenState); }
 
 protected:
-    void onSelectPressed() override;  // Start/Stop
-    void onUpPressed() override;      // Reset
-    void onDownHeld() override;       // Voltar ao menu
+    void onSelectPressed() override; // Start/Stop
+    void onUpPressed()     override; // Reset
+    void onDownHeld()      override; // Voltar ao menu
 
 private:
     Display* display;
-    Screen* backScreen;
-    
-    bool running = false;
-    unsigned long startTime = 0;
+    Screen*  backScreen;
+
+    bool          running     = false;
+    unsigned long startTime   = 0;
     unsigned long elapsedTime = 0;
-    bool shouldGoBack = false;
-    
+    bool          shouldGoBack = false;
+
+    StopwatchState screenState = StopwatchState::STOPPED;
+
     String formatTime(unsigned long ms);
 };
 ```
 
-**`screens/Stopwatch/StopwatchScreen.cpp`**
+**`src/screens/Stopwatch/StopwatchScreen.cpp`**
 ```cpp
 #include "StopwatchScreen.h"
 
@@ -287,32 +330,32 @@ StopwatchScreen::StopwatchScreen(Display* disp, Screen* menu)
 
 void StopwatchScreen::begin() {
     shouldGoBack = false;
+    running      = false;
+    elapsedTime  = 0;
+    screenState  = StopwatchState::STOPPED;
     display->clear();
-    display->fontSet(u8g2_font_6x10_tr);
+    display->display();
 }
 
 void StopwatchScreen::update() {
     if (running) {
         elapsedTime = millis() - startTime;
+        screenState = StopwatchState::RUNNING;
     }
 }
 
 void StopwatchScreen::draw() {
     display->clear();
-    
-    // Título
+
     display->fontSet(u8g2_font_6x10_tr);
     display->printCentered("CRONOMETRO", 10);
-    
-    // Tempo
+
     display->fontSet(u8g2_font_10x20_tr);
     display->printCentered(formatTime(elapsedTime).c_str(), 35);
-    
-    // Status
+
     display->fontSet(u8g2_font_6x10_tr);
-    const char* status = running ? "RODANDO" : "PARADO";
-    display->printCentered(status, 55);
-    
+    display->printCentered(running ? "RODANDO" : "PARADO", 55);
+
     display->display();
 }
 
@@ -327,16 +370,19 @@ Screen* StopwatchScreen::nextScreen() {
 
 void StopwatchScreen::onSelectPressed() {
     if (running) {
-        running = false;
+        running     = false;
+        screenState = StopwatchState::STOPPED;
     } else {
-        running = true;
-        startTime = millis() - elapsedTime;
+        running    = true;
+        startTime  = millis() - elapsedTime;
+        screenState = StopwatchState::RUNNING;
     }
 }
 
 void StopwatchScreen::onUpPressed() {
-    running = false;
+    running     = false;
     elapsedTime = 0;
+    screenState = StopwatchState::STOPPED;
 }
 
 void StopwatchScreen::onDownHeld() {
@@ -344,424 +390,315 @@ void StopwatchScreen::onDownHeld() {
 }
 
 String StopwatchScreen::formatTime(unsigned long ms) {
-    unsigned long seconds = ms / 1000;
-    unsigned long minutes = seconds / 60;
-    seconds = seconds % 60;
-    unsigned long millis = (ms % 1000) / 10;
-    
+    unsigned long secs    = ms / 1000;
+    unsigned long mins    = secs / 60;
+    secs                  = secs % 60;
+    unsigned long centis  = (ms % 1000) / 10;
+
     char buf[12];
-    sprintf(buf, "%02lu:%02lu.%02lu", minutes, seconds, millis);
+    sprintf(buf, "%02lu:%02lu.%02lu", mins, secs, centis);
     return String(buf);
 }
 ```
 
-#### 2️⃣ Instanciar no main.cpp
+#### 2. Instanciar no main.cpp
 
 ```cpp
 #include "screens/Stopwatch/StopwatchScreen.h"
 
-// Criar instância (ordem importa: depende do menu)
 StopwatchScreen stopwatchScreen(&display, &menuAppScreen);
-
-void setup() {
-    // ... código existente ...
-    
-    // Se quiser adicionar ao menu, precisa implementar lógica no MenuAppScreen
-}
 ```
 
-#### 3️⃣ Adicionar ao Menu (Futuro)
+#### 3. Adicionar ao Menu
 
-⚠️ **Nota:** A lógica dinâmica de adição ao menu ainda não foi implementada. Por enquanto, é necessário:
+Editar `MenuAppScreen.h` e `MenuAppScreen.cpp`:
 
-1. Adicionar manualmente a opção no array `options[]` do `MenuAppScreen`
-2. Criar um ponteiro para a nova tela no `MenuAppScreen.h`
-3. Adicionar o case no switch do método `onSelectPressed()`
+```cpp
+// MenuAppScreen.h — adicionar ponteiro e opção
+Screen* stopwatchScreen;
+
+static constexpr const char* options[6] = {
+    "Relogio",
+    "Calendario",
+    "Tela WiFi",
+    "Tela NTP",
+    "Lanterna",
+    "Cronometro"   // ← nova entrada
+};
+static constexpr int numOptions = 6;
+
+// Atualizar setScreens() para receber a nova tela
+void setScreens(Screen* clk, Screen* calendar, Screen* wifi,
+                Screen* ntp, Screen* flash, Screen* stopwatch);
+```
+
+```cpp
+// MenuAppScreen.cpp — adicionar case no switch
+case 5:
+    nextScreenPtr = stopwatchScreen;
+    nextTriggered = true;
+    break;
+```
+
+```cpp
+// main.cpp — atualizar chamada de setScreens
+menuAppScreen.setScreens(
+    &clockScreen,
+    &calendarScreen,
+    &wifiScreen,
+    &ntpScreen,
+    &flashlightScreen,
+    &stopwatchScreen    // ← nova tela
+);
+```
 
 ---
 
 ## 🎬 Sistema de Animações
 
-### Interface Base
+### Interface `Animation`
 
-**`animations/Animation.h`**
+**`src/screens/animations/Animation.h`**
 ```cpp
 #pragma once
 
 class Animation {
 public:
     virtual ~Animation() {}
-
-    virtual void start() = 0;                    // Inicializar animação
-    virtual void update() = 0;                   // Atualizar frame
-    virtual void draw(Display* display) = 0;     // Renderizar
-    virtual bool finished() = 0;                 // Verificar se terminou
+    virtual void start()              = 0; // chamado pelo Animator ao add()
+    virtual void update()             = 0; // atualiza estado por frame
+    virtual void draw(Display* disp)  = 0; // renderiza
+    virtual bool finished()           = 0; // sinal para auto-delete
 };
 ```
 
-### Gerenciador de Animações
+### Gerenciador `Animator`
 
-O `Animator` gerencia múltiplas animações simultaneamente:
-
-**`animations/Animator.h`**
 ```cpp
-#pragma once
-#include <vector>
-#include "Animation.h"
-
-class Animator {
-private:
-    std::vector<Animation*> animations;
-
-public:
-    void add(Animation* anim) {
-        anim->start();
-        animations.push_back(anim);
-    }
-
-    void update() {
-        // Atualiza e remove animações finalizadas
-        for (int i = animations.size() - 1; i >= 0; i--) {
-            animations[i]->update();
-            if (animations[i]->finished()) {
-                delete animations[i];
-                animations.erase(animations.begin() + i);
-            }
-        }
-    }
-
-    void draw(Display* display) {
-        for (auto* anim : animations) {
-            anim->draw(display);
-        }
-    }
-
-    void clear() {
-        for (auto* anim : animations) delete anim;
-        animations.clear();
-    }
-
-    ~Animator() { clear(); }
-};
+// Animator assume ownership das animações adicionadas com add()
+animator.add(new MinhaAnimacao(...)); // OK — Animator gerencia memória
+animator.update();                    // atualiza todos, remove finished()
+animator.draw(display);               // renderiza todos
+animator.clear();                     // delete todos (usar em end())
 ```
 
 ### Criando Nova Animação
 
 **Exemplo: FadeAnimation**
 
-**`animations/FadeAnimation.h`**
 ```cpp
+// src/screens/animations/FadeAnimation.h
 #pragma once
 #include "Animation.h"
 #include "drivers/Display.h"
 
 class FadeAnimation : public Animation {
 public:
-    FadeAnimation(int startContrast, int endContrast, int durationMs)
-        : start(startContrast), end(endContrast), duration(durationMs) {}
+    FadeAnimation(int fromContrast, int toContrast, int durationMs)
+        : from(fromContrast), to(toContrast), duration(durationMs) {}
 
     void start() override {
         startTime = millis();
-        currentContrast = start;
+        current   = from;
+        done      = false;
     }
 
     void update() override {
-        unsigned long elapsed = millis() - startTime;
-        float progress = (float)elapsed / duration;
-        
+        float progress = (float)(millis() - startTime) / duration;
         if (progress >= 1.0f) {
             progress = 1.0f;
-            done = true;
+            done     = true;
         }
-        
-        currentContrast = start + (end - start) * progress;
+        current = from + (to - from) * progress;
     }
 
     void draw(Display* display) override {
-        display->setDisplayContrast(currentContrast);
+        display->setDisplayContrast(current);
     }
 
-    bool finished() override {
-        return done;
-    }
+    bool finished() override { return done; }
 
 private:
-    int start, end;
-    int duration;
+    int  from, to, duration;
+    int  current   = 0;
+    bool done      = false;
     unsigned long startTime = 0;
-    int currentContrast = 0;
-    bool done = false;
 };
 ```
 
-### Usando Animações em Telas
-
-**Exemplo: MenuAppScreen**
-
-**`screens/MenuAppScreen.h`**
+**Usando em uma tela:**
 ```cpp
-#pragma once
-#include "Screen.h"
-#include "drivers/Display.h"
-#include "animations/Animator.h"
-#include "animations/LineGrowAnimation.h"
+void MinhaScreen::begin() {
+    // Fade-in ao abrir a tela
+    animator.add(new FadeAnimation(0, 200, 500));
+}
 
-class MenuAppScreen : public Screen {
-public:
-    MenuAppScreen(Display* disp)
-        : display(disp), selectedIndex(0) {}
+void MinhaScreen::update() {
+    animator.update();
+}
 
-    void begin() override;
-    void update() override;
-    void draw() override;
-    void end() override;
+void MinhaScreen::draw() {
+    display->clear();
+    animator.draw(display); // renderiza animações por cima
+    // ... resto da UI
+    display->display();
+}
 
-protected:
-    void onUpPressed() override;
-    void onDownPressed() override;
-    void onSelectPressed() override;
-
-private:
-    Display* display;
-    int selectedIndex = 0;
-    
-    Animator animator;  // ← Gerenciador de animações
-    
-    static constexpr const char* options[5] = {
-        "Relogio/Data",
-        "Calendario",
-        "Tela WiFi",
-        "Tela NTP",
-        "Lanterna"
-    };
-    static constexpr int numOptions = 5;
-};
+void MinhaScreen::end() {
+    animator.clear(); // SEMPRE limpar em end()
+    display->clear();
+    display->display();
+}
 ```
 
-**`screens/MenuAppScreen.cpp`**
+### LineGrowAnimation (já implementada)
+
+Cresce uma linha horizontal da posição `x` até `maxWidth` pixels:
+
 ```cpp
-#include "MenuAppScreen.h"
-
-void MenuAppScreen::begin() {
-    display->clear();
-    display->fontSet(u8g2_font_6x10_tr);
-    display->display();
-
-    // Adicionar animação inicial
-    animator.add(new LineGrowAnimation(
-        22, 
-        12 + (selectedIndex * 12), 
-        display->getWStr(options[selectedIndex]) - 19, 
-        3, 
-        true, 
-        true
-    ));
-}
-
-void MenuAppScreen::update() {
-    animator.update();  // ← Atualiza todas as animações
-}
-
-void MenuAppScreen::draw() {
-    display->clear();
-    
-    animator.draw(display);  // ← Desenha todas as animações
-    
-    // Resto do código de desenho...
-    
-    display->display();
-}
-
-void MenuAppScreen::end() {
-    animator.clear();  // ← Limpa todas as animações
-    display->clear();
-    display->display();
-}
-
-void MenuAppScreen::onUpPressed() {
-    if (selectedIndex > 0) {
-        selectedIndex--;
-    } else {
-        selectedIndex = numOptions - 1;
-    }
-    
-    // Adiciona nova animação ao trocar opção
-    animator.add(new LineGrowAnimation(
-        22, 
-        12 + (selectedIndex * 12), 
-        display->getWStr(options[selectedIndex]) - 19, 
-        3, 
-        true, 
-        true
-    ));
-}
+LineGrowAnimation(
+    int x,              // X inicial
+    int y,              // Y da linha
+    int maxWidth,       // largura alvo em pixels
+    int speed,          // px por frame (negativo = encolher)
+    bool stopAtEnd,     // parar ao atingir maxWidth
+    bool removeOnFinish // se true, Animator remove ao terminar
+)
 ```
 
-### 🎭 Fluxo de Animação
-
-```
-┌──────────────────┐
-│ Screen::begin()  │
-│   animator.add() │  ← Adiciona animação
-└────────┬─────────┘
-         │
-    ┌────▼──────────┐
-    │ Animation     │
-    │ .start()      │  ← Inicializa
-    └────┬──────────┘
-         │
-    ┌────▼──────────┐  (todo frame)
-    │ Screen::update│
-    │ animator.     │
-    │   update()    │  ← Atualiza frames
-    └────┬──────────┘
-         │
-    ┌────▼──────────┐  (todo frame)
-    │ Screen::draw()│
-    │ animator.     │
-    │   draw()      │  ← Renderiza
-    └────┬──────────┘
-         │
-    ┌────▼──────────┐
-    │ finished()?   │
-    │   true → 🗑️   │  ← Auto-deleta quando termina
-    └───────────────┘
+**Cálculo de largura para alinhar ao texto:**
+```cpp
+// Padrão usado no MenuAppScreen
+int width = display->getWStr(options[selectedIndex]) - 19;
+animator.add(new LineGrowAnimation(22, y, width, 3, true, true));
 ```
 
 ---
 
 ## ✅ Boas Práticas
 
-### Nomenclatura
-```cpp
-// Classes: PascalCase
-class MenuAppScreen { };
-
-// Variáveis/métodos: camelCase
-int selectedIndex = 0;
-void updateDisplay();
-
-// Constantes: UPPER_SNAKE_CASE
-const uint8_t PIN_BUZZER = 15;
-```
-
-### Estrutura de Arquivos
-```
-src/
-├── main.cpp
-├── core/
-│   └── ScreenManager.{h,cpp}
-├── drivers/
-│   ├── Display.{h,cpp}
-│   ├── RTC.{h,cpp}
-│   ├── Buttons.{h,cpp}
-│   ├── Lantern.{h,cpp}
-│   └── Buzzer.{h,cpp}           ← Novos drivers aqui
-├── screens/
-│   ├── Screen.h
-│   ├── BootScreen.{h,cpp}
-│   ├── MenuAppScreen.{h,cpp}
-|   ├── ...
-|   └── NewScreen.{h,cpp}        ← Novas screens aqui
-├── animations/
-│   ├── Animation.h
-│   ├── Animator.h
-│   |── LineGrowAnimation.{h,cpp}
-|   └── NewAnimation.{h,cpp}     ← Novas animações aqui
-├── input/
-│   ├── InputManager.{h,cpp}
-│   └── ButtonEvent.h
-├── output/
-│   └── OutputManager.{h,cpp}
-└── services/
-    └── NetworkService.{h,cpp}
-```
-
 ### Responsabilidade Única
+
 ```cpp
-// ❌ ERRADO: Tela fazendo controle de hardware
+// ❌ ERRADO: tela manipulando hardware diretamente
 void ClockScreen::draw() {
-    digitalWrite(LED_PIN, HIGH);  // NÃO!
-    display->drawText(...);
+    digitalWrite(16, HIGH); // nunca!
 }
 
-// ✅ CORRETO: Usar OutputManager
+// ✅ CORRETO: usar a camada de abstração
 void ClockScreen::update() {
-    if (needLight) {
-        outputManager->setLantern(true);  // SIM!
-    }
+    if (needLight) outputManager->setLantern(true);
 }
-```
-
-### Gerenciamento de Memória
-```cpp
-// ⚠️ ATENÇÃO: Animações são auto-deletadas
-animator.add(new FadeAnimation(...));  // OK, Animator gerencia
-
-// ❌ NÃO faça isso:
-FadeAnimation* anim = new FadeAnimation(...);
-animator.add(anim);
-delete anim;  // ERRO! Animator já vai deletar
 ```
 
 ### Transições de Tela
+
 ```cpp
-// Sempre usar o padrão nextScreen()
+// ✅ CORRETO: sempre via nextScreen()
 Screen* nextScreen() override {
     return shouldTransition ? targetScreen : this;
 }
 
-// ❌ NÃO manipule screenManager diretamente da tela
+// ❌ ERRADO: não acesse screenManager diretamente de uma tela
+```
+
+### Gerenciamento de Memória com Animator
+
+```cpp
+// ✅ CORRETO
+animator.add(new FadeAnimation(...)); // Animator gerencia delete
+
+// ❌ ERRADO: double-free
+FadeAnimation* anim = new FadeAnimation(...);
+animator.add(anim);
+delete anim; // CRASH — Animator já vai deletar
 ```
 
 ### Inicialização e Limpeza
+
 ```cpp
-class MyScreen : public Screen {
-    void begin() override {
-        // Sempre resetar estado
-        counter = 0;
-        animator.clear();
-        display->clear();
-    }
-    
-    void end() override {
-        // Sempre limpar recursos
-        animator.clear();
-        display->clear();
-        display->display();
-    }
+void MinhaScreen::begin() {
+    // Sempre resetar estado ao entrar
+    counter      = 0;
+    triggered    = false;
+    screenState  = MinhaState::IDLE;
+    animator.clear();
+    display->clear();
+    display->display();
+}
+
+void MinhaScreen::end() {
+    // Sempre limpar recursos ao sair
+    animator.clear();
+    display->clear();
+    display->display();
+}
+```
+
+### getState() e Estados
+
+```cpp
+// Declare um enum de estado para cada tela
+enum class MinhaTelaState {
+    IDLE,
+    LOADING,
+    SUCCESS,
+    ERROR
 };
+
+// Retorne corretamente em getState()
+uint8_t getState() const override {
+    return static_cast<uint8_t>(screenState);
+}
+
+// Atualize o estado na lógica
+void MinhaScreen::update() {
+    if (algo) screenState = MinhaTelaState::LOADING;
+}
+// O ScreenManager detecta a mudança e reseta o auto-off automaticamente
+```
+
+### Nomenclatura
+
+```cpp
+class MenuAppScreen {};         // Classes: PascalCase
+int selectedIndex = 0;          // Variáveis: camelCase
+void handleInput();              // Métodos: camelCase
+const uint8_t PIN_BUZZER = 15;  // Constantes: UPPER_SNAKE_CASE
+enum class BootScreenState {};  // Enums de estado: PascalCase + "State"
 ```
 
 ---
 
-## 🚀 Checklist de Desenvolvimento
+## 🚀 Checklists
 
 ### Adicionando Driver
-- [ ] Criar `Driver.h` e `Driver.cpp` em `drivers/`
-- [ ] Implementar método `begin()`
-- [ ] Adicionar ao `InputManager` ou `OutputManager`
-- [ ] Atualizar `main.cpp` com instância
-- [ ] Definir pino GPIO como constante
-- [ ] Testar isoladamente antes de integrar
+- [ ] Criar `Driver.h` e `Driver.cpp` em `src/drivers/`
+- [ ] Implementar `begin()`
+- [ ] Implementar `update()` se necessário (auto-stop, polling, etc.)
+- [ ] Integrar ao `InputManager` ou `OutputManager`
+- [ ] Atualizar o construtor do manager correspondente
+- [ ] Instanciar em `main.cpp` e passar ao manager
+- [ ] Definir pino GPIO como constante em `main.cpp`
 
 ### Criando Tela
 - [ ] Herdar de `Screen`
 - [ ] Implementar `draw()` (obrigatório)
+- [ ] Implementar `getState()` com enum de estado (obrigatório)
 - [ ] Implementar `name()` para debug
-- [ ] Implementar `begin()` e `end()` para cleanup
+- [ ] Implementar `begin()` com reset de estado e limpeza do display
+- [ ] Implementar `end()` com `animator.clear()` e limpeza do display
 - [ ] Implementar `nextScreen()` para navegação
-- [ ] Override callbacks de botões se necessário
-- [ ] Instanciar no `main.cpp`
-- [ ] Adicionar ao menu (quando implementado)
+- [ ] Fazer override dos callbacks de botão necessários
+- [ ] Instanciar em `main.cpp`
+- [ ] Adicionar ao `MenuAppScreen`
 
 ### Criando Animação
 - [ ] Herdar de `Animation`
 - [ ] Implementar `start()`, `update()`, `draw()`, `finished()`
-- [ ] Testar performance (evitar operações pesadas)
-- [ ] Garantir que `finished()` sempre retorna true eventualmente
-- [ ] Adicionar via `Animator::add()` com `new`
-- [ ] Não deletar manualmente (Animator gerencia)
+- [ ] Garantir que `finished()` eventualmente retorna `true` (se `removeOnFinish = true`)
+- [ ] Testar performance (evitar operações pesadas por frame)
+- [ ] Adicionar via `animator.add(new ...)` — não deletar manualmente
 
 ---
 
@@ -769,39 +706,47 @@ class MyScreen : public Screen {
 
 ### Tela não aparece
 ```cpp
-// Verificar se está implementando draw()
-void MyScreen::draw() {
+void MinhaScreen::draw() {
     display->clear();
-    // ... seu código ...
-    display->display();  // ← NÃO ESQUEÇA!
+    // ...
+    display->display(); // ← você esqueceu isso
 }
 ```
 
 ### Animação não funciona
 ```cpp
-// Verificar se update() e draw() estão sendo chamados
-void MyScreen::update() {
-    animator.update();  // ← Necessário!
+void MinhaScreen::update() {
+    animator.update(); // ← necessário todo frame
 }
-
-void MyScreen::draw() {
-    animator.draw(display);  // ← Necessário!
+void MinhaScreen::draw() {
+    animator.draw(display); // ← necessário todo frame
 }
 ```
 
+### Tela fica presa / não transita
+```cpp
+// Certifique que nextScreen() retorna o ponteiro correto
+Screen* nextScreen() override {
+    return triggered ? nextScreenPtr : this; // ← null aqui causa crash
+}
+// E que triggered é setado corretamente em algum callback
+```
+
+### Display some depois de 5 segundos
+Isso é o auto-off normal. Se quiser desabilitar em uma tela específica, chame `display->resetAutoOff()` no `update()`. Mas prefira implementar `getState()` corretamente — o `ScreenManager` faz isso automaticamente.
+
 ### Driver não responde
 ```cpp
-// Verificar se begin() foi chamado
 void OutputManager::begin() {
-    buzzer.begin();  // ← Necessário!
+    lantern.begin();
+    buzzer.begin(); // ← você adicionou ao begin()?
 }
 ```
 
 ### Vazamento de memória
 ```cpp
-// Sempre limpar em end()
-void MyScreen::end() {
-    animator.clear();  // ← Libera memória!
+void MinhaScreen::end() {
+    animator.clear(); // ← libera todas as animações alocadas com new
 }
 ```
 
@@ -809,11 +754,11 @@ void MyScreen::end() {
 
 ## 📚 Recursos Adicionais
 
-- **Exemplos práticos:** Veja as telas já implementadas como referência
-- **Bibliotecas:** Documentação das libs no `platformio.ini`
-- **Hardware:** Pinout completo na documentação principal
-- **Patterns:** Observer (eventos), State (telas), Strategy (animações)
+- Veja as telas já implementadas como referência de padrão real
+- Padrões de projeto utilizados: **State** (telas), **Observer** (eventos), **Strategy** (animações)
+- Documentação das bibliotecas no `platformio.ini`
+- Pinout completo e arquitetura geral no `README.md`
 
 ---
 
-**Boa codificação! 🎮**
+**Bora codar! 🎮**
