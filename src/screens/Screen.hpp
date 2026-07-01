@@ -1,5 +1,6 @@
 #pragma once
-#include "input/InputManager.hpp"
+#include "core/StaticRegistry.hpp"
+#include "input/ButtonEvent.hpp"
 
 class Screen {
 public:
@@ -12,7 +13,9 @@ public:
   virtual void update() {}
   virtual void draw() = 0;
   virtual void handleInput(ButtonEvent ev);
-  virtual Screen *nextScreen() { return nullptr; }
+
+  virtual ScreenID selfScreenID() const { return ScreenID::NONE; }
+  virtual ScreenID nextScreen() const { return ScreenID::NONE; }
 
   virtual uint8_t getState() const = 0;
 

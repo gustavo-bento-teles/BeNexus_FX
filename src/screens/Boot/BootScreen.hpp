@@ -1,16 +1,16 @@
 #pragma once
-#include "drivers/Display.hpp"
+#include "core/StaticRegistry.hpp"
+#include "drivers/DriverContext.hpp"
 #include "screens/Screen.hpp"
 
 #include "screens/animations/Animator.hpp"
-#include "screens/animations/LineGrowAnimation.hpp"
 
 enum class BootScreenState { IDLE };
 
 class BootScreen : public Screen {
 public:
-  BootScreen(Display *disp, Screen *next)
-      : display(disp), nextScreenPtr(next) {}
+  BootScreen(DriverContext &ctx, ScreenID next)
+      : driverContext(ctx), nextScreenID(next) {}
 
   const char *name() override { return "BootScreen"; }
 
@@ -19,15 +19,24 @@ public:
   void draw() override;
   void end() override;
 
-  Screen *nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
+  ScreenID selfScreenID() const override { return ScreenID::BOOT; }
+
+  ScreenID nextScreen() const override {
+    return nextTriggered ? nextScreenID : ScreenID::BOOT;
+  }
+
+  static Screen *create(DriverContext &driverContext) {
+    return new BootScreen(driverContext, ScreenID::MENUAPP);
+  }
 
   uint8_t getState() const override { return static_cast<int>(screenState); }
 
 private:
   Animator animator;
 
-  Display *display;
-  Screen *nextScreenPtr;
+  DriverContext &driverContext;
+
+  ScreenID nextScreenID;
   bool nextTriggered = false;
   unsigned long startTime = 0;
   const unsigned long bootDuration = 500;

@@ -1,15 +1,15 @@
 #pragma once
 #include "ButtonEvent.hpp"
-#include "drivers/Buttons.hpp"
+#include "drivers/DriverContext.hpp"
 
 class InputManager {
 public:
-  explicit InputManager(Buttons &btns);
+  InputManager(DriverContext &driverContext);
 
   void begin();
   void update();
   ButtonEvent getEvent();
 
 private:
-  Buttons &buttons;
+  DriverContext &driverContext;
 };

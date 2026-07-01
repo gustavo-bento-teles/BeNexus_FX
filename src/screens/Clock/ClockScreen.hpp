@@ -1,15 +1,14 @@
 #pragma once
-#include "drivers/Display.hpp"
-#include "drivers/RTC.hpp"
+#include "core/StaticRegistry.hpp"
+#include "drivers/DriverContext.hpp"
 #include "screens/Screen.hpp"
 
 enum class ClockScreenState { IDLE };
 
 class ClockScreen : public Screen {
 public:
-  ClockScreen(Display *disp, RTCManager *rtc, Screen *next)
-      : display(disp), rtcManager(rtc), nextScreenPtr(next),
-        nextTriggered(false) {}
+  ClockScreen(DriverContext &ctx, ScreenID next)
+      : driverContext(ctx), nextScreenID(next), nextTriggered(false) {}
 
   const char *name() override { return "ClcokScreen"; }
 
@@ -18,7 +17,15 @@ public:
   void draw() override;
   void end() override;
 
-  Screen *nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
+  ScreenID selfScreenID() const override { return ScreenID::CLOCK; }
+
+  ScreenID nextScreen() const override {
+    return nextTriggered ? nextScreenID : ScreenID::CLOCK;
+  }
+
+  static Screen *create(DriverContext &driverContext) {
+    return new ClockScreen(driverContext, ScreenID::MENUAPP);
+  }
 
   uint8_t getState() const override { return static_cast<int>(screenState); }
 
@@ -28,9 +35,8 @@ protected:
   void onDownPressed() override;
 
 private:
-  Display *display;
-  RTCManager *rtcManager;
-  Screen *nextScreenPtr;
+  DriverContext &driverContext;
+  ScreenID nextScreenID;
   bool nextTriggered;
 
   ClockScreenState screenState = ClockScreenState::IDLE;

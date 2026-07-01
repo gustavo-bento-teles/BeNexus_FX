@@ -1,41 +1,45 @@
 #include "ScreenManager.hpp"
+#include "core/StaticRegistry.hpp"
+#include "drivers/DriverContext.hpp"
 #include "services/NetworkService.hpp"
 
-ScreenManager::ScreenManager(Screen *initialScreen, Display *display,
-                             RTCManager *rtc)
-    : currentScreen(initialScreen), display(display), rtc(rtc) {}
+ScreenManager::ScreenManager(ScreenID id, DriverContext &ctx)
+    : initialScreenID(id), driverContext(ctx) {}
 
 void ScreenManager::begin() {
-  if (currentScreen)
-    currentScreen->begin();
+  driverContext.display->begin();
+  driverContext.rtc->begin();
+  driverContext.lantern->begin();
 
-  rtc->begin();
+  currentScreen = createScreen(initialScreenID, driverContext);
+  currentScreen->begin();
 }
 
 void ScreenManager::update() {
   NetworkService::update();
-  rtc->update();
+  driverContext.rtc->update();
 
   if (currentScreen) {
     currentScreen->update();
-    Screen *next = currentScreen->nextScreen();
-    if (next && next != currentScreen) {
+    ScreenID next = currentScreen->nextScreen();
+    if (next != currentScreen->selfScreenID() && next != ScreenID::NONE) {
       currentScreen->end();
-      currentStateScreen = -1;
-      currentScreen = next;
+      currentStateScreen = 0;
+      delete currentScreen;
+      currentScreen = createScreen(next, driverContext);
       currentScreen->begin();
-      display->resetAutoOff();
+      driverContext.display->resetAutoOff();
     }
 
     uint8_t screenState = currentScreen->getState();
 
     if (screenState != currentStateScreen) {
       currentStateScreen = screenState;
-      display->resetAutoOff();
+      driverContext.display->resetAutoOff();
     }
   }
 
-  display->handleAutoOff();
+  driverContext.display->handleAutoOff();
 
   yield();
 }
@@ -46,14 +50,14 @@ void ScreenManager::draw() {
 }
 
 void ScreenManager::handleInput(ButtonEvent ev) {
-  if (!display->getDisplayStatus() && ev != ButtonEvent::None) {
-    display->displayOn(true);
-    display->resetAutoOff();
+  if (!driverContext.display->getDisplayStatus() && ev != ButtonEvent::None) {
+    driverContext.display->displayOn(true);
+    driverContext.display->resetAutoOff();
     return;
   }
 
   if (ev != ButtonEvent::None) {
-    display->resetAutoOff();
+    driverContext.display->resetAutoOff();
   }
 
   if (currentScreen) {

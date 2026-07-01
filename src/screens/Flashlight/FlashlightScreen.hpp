@@ -1,15 +1,14 @@
 #pragma once
-#include "drivers/Display.hpp"
-#include "output/OutputManager.hpp"
+#include "core/StaticRegistry.hpp"
+#include "drivers/DriverContext.hpp"
 #include "screens/Screen.hpp"
 
 enum class FlashScreenState { IDLE };
 
 class FlashlightScreen : public Screen {
 public:
-  FlashlightScreen(Display *disp, Screen *next, OutputManager *outMgr)
-      : display(disp), nextScreenPtr(next), output(outMgr),
-        nextTriggered(false) {}
+  FlashlightScreen(DriverContext &ctx, ScreenID next)
+      : driverContext(ctx), nextScreenID(next), nextTriggered(false) {}
 
   const char *name() override { return "FlashlightScreen"; }
 
@@ -18,7 +17,15 @@ public:
   void draw() override;
   void end() override;
 
-  Screen *nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
+  ScreenID selfScreenID() const override { return ScreenID::FLASHLIGHT; }
+
+  ScreenID nextScreen() const override {
+    return nextTriggered ? nextScreenID : ScreenID::FLASHLIGHT;
+  }
+
+  static Screen *create(DriverContext &driverContext) {
+    return new FlashlightScreen(driverContext, ScreenID::MENUAPP);
+  }
 
   uint8_t getState() const override { return static_cast<int>(screenState); }
 
@@ -28,9 +35,8 @@ protected:
   void onSelectPressed() override;
 
 private:
-  Display *display;
-  Screen *nextScreenPtr;
-  OutputManager *output;
+  DriverContext &driverContext;
+  ScreenID nextScreenID;
   bool nextTriggered;
 
   FlashScreenState screenState = FlashScreenState::IDLE;

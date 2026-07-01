@@ -29,8 +29,9 @@ public:
   }
 
   void clear() {
-    for (auto *anim : animations)
+    for (auto *anim : animations) {
       delete anim;
+    }
     animations.clear();
   }
 

@@ -1,5 +1,6 @@
 #pragma once
-#include "drivers/Display.hpp"
+#include "core/StaticRegistry.hpp"
+#include "drivers/DriverContext.hpp"
 #include "screens/Screen.hpp"
 
 #include "screens/animations/Animator.hpp"
@@ -8,8 +9,9 @@ enum class MenuScreenState { IDLE };
 
 class MenuAppScreen : public Screen {
 public:
-  MenuAppScreen(Display *disp)
-      : display(disp), nextScreenPtr(nullptr), nextTriggered(false) {}
+  MenuAppScreen(DriverContext &ctx)
+      : driverContext(ctx), nextScreenID(ScreenID::MENUAPP),
+        nextTriggered(false) {}
 
   const char *name() override { return "MenuAppScreen"; }
 
@@ -18,15 +20,14 @@ public:
   void draw() override;
   void end() override;
 
-  Screen *nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
+  ScreenID selfScreenID() const override { return ScreenID::MENUAPP; }
 
-  void setScreens(Screen *clk, Screen *calendar, Screen *wifi, Screen *ntp,
-                  Screen *flash) {
-    clockScreen = clk;
-    calendarScreen = calendar;
-    wifiScreen = wifi;
-    ntpScreen = ntp;
-    flashlightScreen = flash;
+  ScreenID nextScreen() const override {
+    return nextTriggered ? nextScreenID : ScreenID::MENUAPP;
+  }
+
+  static Screen *create(DriverContext &driverContext) {
+    return new MenuAppScreen(driverContext);
   }
 
   uint8_t getState() const override { return static_cast<int>(screenState); }
@@ -37,14 +38,8 @@ protected:
   void onSelectPressed() override;
 
 private:
-  Screen *clockScreen;
-  Screen *calendarScreen;
-  Screen *wifiScreen;
-  Screen *ntpScreen;
-  Screen *flashlightScreen;
-
-  Display *display;
-  Screen *nextScreenPtr;
+  DriverContext &driverContext;
+  ScreenID nextScreenID;
   bool nextTriggered;
 
   Animator animator;

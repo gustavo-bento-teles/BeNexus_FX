@@ -1,6 +1,6 @@
 #pragma once
-#include "drivers/Display.hpp"
-#include "drivers/RTC.hpp"
+#include "core/StaticRegistry.hpp"
+#include "drivers/DriverContext.hpp"
 #include "screens/Screen.hpp"
 #include <NTPClient.h>
 #include <WiFiUdp.h>
@@ -9,9 +9,8 @@ enum class NTPScreenState { CONNECTED, DISCONNECTED, UPDATING };
 
 class NTPScreen : public Screen {
 public:
-  NTPScreen(Display *disp, RTCManager *rtc, Screen *next, Screen *wifi)
-      : display(disp), rtcManager(rtc), nextScreenPtr(next), wifiScreen(wifi),
-        menuAppScreen(next), nextTriggered(false) {}
+  NTPScreen(DriverContext &ctx, ScreenID next)
+      : driverContext(ctx), nextScreenID(next), nextTriggered(false) {}
 
   const char *name() override { return "NTPScreen"; }
 
@@ -20,7 +19,15 @@ public:
   void draw() override;
   void end() override;
 
-  Screen *nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
+  ScreenID selfScreenID() const override { return ScreenID::NTP; }
+
+  ScreenID nextScreen() const override {
+    return nextTriggered ? nextScreenID : ScreenID::NTP;
+  }
+
+  static Screen *create(DriverContext &driverContext) {
+    return new NTPScreen(driverContext, ScreenID::MENUAPP);
+  }
 
   uint8_t getState() const override { return static_cast<int>(screenState); }
 
@@ -32,12 +39,8 @@ protected:
 private:
   void atualizarNTP();
 
-  Display *display;
-  RTCManager *rtcManager;
-  Screen *nextScreenPtr;
-
-  Screen *wifiScreen;
-  Screen *menuAppScreen;
+  DriverContext &driverContext;
+  ScreenID nextScreenID;
 
   bool nextTriggered;
   bool firstClient = true;

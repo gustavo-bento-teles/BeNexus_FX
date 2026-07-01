@@ -2,11 +2,11 @@
 
 void CalendarScreen::begin() {
   nextTriggered = false;
-  display->fontSet(u8g2_font_6x10_tf);
+  driverContext.display->fontSet(u8g2_font_6x10_tf);
 
-  currentYear = rtcManager->getYear();
-  currentMonth = rtcManager->getMonth();
-  currentDay = rtcManager->getDay();
+  currentYear = driverContext.rtc->getYear();
+  currentMonth = driverContext.rtc->getMonth();
+  currentDay = driverContext.rtc->getDay();
 
   month = currentMonth;
   year = currentYear;
@@ -15,7 +15,7 @@ void CalendarScreen::begin() {
 void CalendarScreen::update() {}
 
 void CalendarScreen::draw() {
-  display->clear();
+  driverContext.display->clear();
 
   char header[32];
 
@@ -25,15 +25,15 @@ void CalendarScreen::draw() {
         "Julho",   "Agosto",    "Setembro", "Outubro", "Novembro", "Dezembro"};
     snprintf(header, sizeof(header), "< %02d(%s)/%04d >", month,
              nameWeekDays[month - 1], year + 2000);
-    display->printCentered(header, 8);
+    driverContext.display->printCentered(header, 8);
   } else {
     snprintf(header, sizeof(header), "< %02d/%04d >", month, year + 2000);
-    display->printCentered(header, 8);
+    driverContext.display->printCentered(header, 8);
   }
 
   const char *weekDays[] = {"D", "S", "T", "Q", "Q", "S", "S"};
   for (int i = 0; i < 7; i++) {
-    display->drawText(7 + i * 17, 18, weekDays[i]);
+    driverContext.display->drawText(7 + i * 17, 18, weekDays[i]);
   }
 
   int firstDow = weekdayOf(1, month, year);
@@ -51,18 +51,18 @@ void CalendarScreen::draw() {
     char buf[4];
     if (d == currentDay && month == currentMonth && year == currentYear) {
       snprintf(buf, sizeof(buf), "%2d", d);
-      int largura = display->getWStr(buf);
+      int largura = driverContext.display->getWStr(buf);
 
-      display->drawColorSet(1);
-      display->drawBox(x - 1, y - 7, largura + 3, 7);
+      driverContext.display->drawColorSet(1);
+      driverContext.display->drawBox(x - 1, y - 7, largura + 3, 7);
 
-      display->drawColorSet(0);
-      display->drawText(x, y, buf);
+      driverContext.display->drawColorSet(0);
+      driverContext.display->drawText(x, y, buf);
 
-      display->drawColorSet(1);
+      driverContext.display->drawColorSet(1);
     } else {
       snprintf(buf, sizeof(buf), "%2d", d);
-      display->drawText(x, y, buf);
+      driverContext.display->drawText(x, y, buf);
     }
 
     x += cellW;
@@ -72,12 +72,12 @@ void CalendarScreen::draw() {
     }
   }
 
-  display->display();
+  driverContext.display->display();
 }
 
 void CalendarScreen::end() {
-  display->clear();
-  display->display();
+  driverContext.display->clear();
+  driverContext.display->display();
 }
 
 void CalendarScreen::onUpPressed() {
