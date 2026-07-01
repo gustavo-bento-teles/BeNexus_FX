@@ -1,0 +1,37 @@
+#pragma once
+#include "drivers/Display.hpp"
+#include "output/OutputManager.hpp"
+#include "screens/Screen.hpp"
+
+enum class FlashScreenState { IDLE };
+
+class FlashlightScreen : public Screen {
+public:
+  FlashlightScreen(Display *disp, Screen *next, OutputManager *outMgr)
+      : display(disp), nextScreenPtr(next), output(outMgr),
+        nextTriggered(false) {}
+
+  const char *name() override { return "FlashlightScreen"; }
+
+  void begin() override;
+  void update() override;
+  void draw() override;
+  void end() override;
+
+  Screen *nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
+
+  uint8_t getState() const override { return static_cast<int>(screenState); }
+
+protected:
+  void onUpPressed() override;
+  void onDownPressed() override;
+  void onSelectPressed() override;
+
+private:
+  Display *display;
+  Screen *nextScreenPtr;
+  OutputManager *output;
+  bool nextTriggered;
+
+  FlashScreenState screenState = FlashScreenState::IDLE;
+};

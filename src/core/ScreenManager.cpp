@@ -1,59 +1,62 @@
-#include "ScreenManager.h"
-#include "services/NetworkService.h"
+#include "ScreenManager.hpp"
+#include "services/NetworkService.hpp"
 
-ScreenManager::ScreenManager(Screen* initialScreen, Display* display, RTCManager* rtc)
+ScreenManager::ScreenManager(Screen *initialScreen, Display *display,
+                             RTCManager *rtc)
     : currentScreen(initialScreen), display(display), rtc(rtc) {}
 
 void ScreenManager::begin() {
-    if (currentScreen) currentScreen->begin();
-    
-    rtc->begin();
+  if (currentScreen)
+    currentScreen->begin();
+
+  rtc->begin();
 }
 
 void ScreenManager::update() {
-    NetworkService::update();
-    rtc->update();
+  NetworkService::update();
+  rtc->update();
 
-    if (currentScreen) {
-        currentScreen->update();
-        Screen* next = currentScreen->nextScreen();
-        if (next && next != currentScreen) {
-            currentScreen->end();
-            currentStateScreen = -1;
-            currentScreen = next;
-            currentScreen->begin();
-            display->resetAutoOff();
-        }
-
-        uint8_t screenState = currentScreen->getState();
-
-        if (screenState != currentStateScreen) {
-            currentStateScreen = screenState;
-            display->resetAutoOff();
-        }
+  if (currentScreen) {
+    currentScreen->update();
+    Screen *next = currentScreen->nextScreen();
+    if (next && next != currentScreen) {
+      currentScreen->end();
+      currentStateScreen = -1;
+      currentScreen = next;
+      currentScreen->begin();
+      display->resetAutoOff();
     }
 
-    display->handleAutoOff();
+    uint8_t screenState = currentScreen->getState();
 
-    yield();
+    if (screenState != currentStateScreen) {
+      currentStateScreen = screenState;
+      display->resetAutoOff();
+    }
+  }
+
+  display->handleAutoOff();
+
+  yield();
 }
 
 void ScreenManager::draw() {
-    if (currentScreen) currentScreen->draw();
+  if (currentScreen)
+    currentScreen->draw();
 }
 
 void ScreenManager::handleInput(ButtonEvent ev) {
-    if (!display->getDisplayStatus() && ev != ButtonEvent::None) {
-        display->displayOn(true);
-        display->resetAutoOff();
-        return;
-    }
+  if (!display->getDisplayStatus() && ev != ButtonEvent::None) {
+    display->displayOn(true);
+    display->resetAutoOff();
+    return;
+  }
 
-    if (ev != ButtonEvent::None) {
-        display->resetAutoOff();
-    }
-    
-    if (currentScreen) {
-        currentScreen->handleInput(ev);
-    }
+  if (ev != ButtonEvent::None) {
+    display->resetAutoOff();
+  }
+
+  if (currentScreen) {
+    currentScreen->handleInput(ev);
+  }
 }

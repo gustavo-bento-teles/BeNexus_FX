@@ -1,90 +1,86 @@
-#include "NTPScreen.h"
-#include "services/NetworkService.h"
+#include "NTPScreen.hpp"
+#include "services/NetworkService.hpp"
 #include <Arduino.h>
 
 void NTPScreen::begin() {
-    nextTriggered = false;
-    display->fontSet(u8g2_font_6x10_tr);
-    nextScreenPtr = menuAppScreen;
+  nextTriggered = false;
+  display->fontSet(u8g2_font_6x10_tr);
+  nextScreenPtr = menuAppScreen;
 }
 
 void NTPScreen::update() {}
 
 void NTPScreen::draw() {
-    display->clear();
+  display->clear();
 
-    display->printCentered("Tela NTP", 8);
+  display->printCentered("Tela NTP", 8);
 
-    if (NetworkService::isConnected()) {
-        screenState = NTPScreenState::CONNECTED;
+  if (NetworkService::isConnected()) {
+    screenState = NTPScreenState::CONNECTED;
 
-        display->printCentered("[Atualizar NTP]", 38);
-    } else {
-        screenState = NTPScreenState::DISCONNECTED;
+    display->printCentered("[Atualizar NTP]", 38);
+  } else {
+    screenState = NTPScreenState::DISCONNECTED;
 
-        display->printCentered("Sem WiFi disponivel!", 30);
-        display->printCentered("Use [tela WiFi]", 45);
-        display->printCentered("para conectar", 55);
-    }
+    display->printCentered("Sem WiFi disponivel!", 30);
+    display->printCentered("Use [tela WiFi]", 45);
+    display->printCentered("para conectar", 55);
+  }
 
-    display->display();
+  display->display();
 }
 
 void NTPScreen::end() {
-    display->clear();
-    display->display();
+  display->clear();
+  display->display();
 }
 
-void NTPScreen::onUpPressed() {
-    nextTriggered = true;
-}
+void NTPScreen::onUpPressed() { nextTriggered = true; }
 
-void NTPScreen::onDownPressed() {
-    nextTriggered = true;
-}
+void NTPScreen::onDownPressed() { nextTriggered = true; }
 
 void NTPScreen::onSelectPressed() {
-    if (NetworkService::isConnected()) {
-        atualizarNTP();
-    } else {
-        nextScreenPtr = wifiScreen;
-        nextTriggered = true;
-    }
+  if (NetworkService::isConnected()) {
+    atualizarNTP();
+  } else {
+    nextScreenPtr = wifiScreen;
+    nextTriggered = true;
+  }
 }
 
 void NTPScreen::atualizarNTP() {
-    screenState = NTPScreenState::UPDATING;
+  screenState = NTPScreenState::UPDATING;
 
-    display->clear();
-    display->printCentered("Atualizando NTP...", 32);
-    display->printCentered("Aguarde...", 45);
-    display->display();
+  display->clear();
+  display->printCentered("Atualizando NTP...", 32);
+  display->printCentered("Aguarde...", 45);
+  display->display();
 
-    if (firstClient) {
-        timeClient.begin();
-        firstClient = false;
-    }
+  if (firstClient) {
+    timeClient.begin();
+    firstClient = false;
+  }
 
-    bool ok = timeClient.forceUpdate();
-    display->clear();
+  bool ok = timeClient.forceUpdate();
+  display->clear();
 
-    if (!ok) {
-        display->printCentered("Atualizacao falhou!", 32);
-        display->display();
-        delay(1000);
-        return;
-    }
-
-    display->printCentered("NTP atualizado!", 32);
+  if (!ok) {
+    display->printCentered("Atualizacao falhou!", 32);
     display->display();
     delay(1000);
+    return;
+  }
 
-    time_t rawtime = timeClient.getEpochTime();
-    struct tm *ti = localtime(&rawtime);
-    rtcManager->setDateTime(ti);
+  display->printCentered("NTP atualizado!", 32);
+  display->display();
+  delay(1000);
 
-    display->clear();
-    display->printCentered("RTC atualizado!", 32);
-    display->display();
-    delay(1000);
+  time_t rawtime = timeClient.getEpochTime();
+  struct tm *ti = localtime(&rawtime);
+  rtcManager->setDateTime(ti);
+
+  display->clear();
+  display->printCentered("RTC atualizado!", 32);
+  display->display();
+  delay(1000);
 }

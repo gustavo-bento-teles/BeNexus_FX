@@ -1,27 +1,27 @@
 #include <Arduino.h>
 
-#include "drivers/Display.h"
-#include "drivers/RTC.h"
-#include "drivers/Buttons.h"
-#include "drivers/Lantern.h"
+#include "drivers/Buttons.hpp"
+#include "drivers/Display.hpp"
+#include "drivers/Lantern.hpp"
+#include "drivers/RTC.hpp"
 
-#include "screens/Boot/BootScreen.h"
-#include "screens/Clock/ClockScreen.h"
-#include "screens/Calendar/CalendarScreen.h"
-#include "screens/MenuApp/MenuAppScreen.h"
-#include "screens/WiFi/WiFiScreen.h"
-#include "screens/NTP/NTPScreen.h"
-#include "screens/Flashlight/FlashlightScreen.h"
+#include "screens/Boot/BootScreen.hpp"
+#include "screens/Calendar/CalendarScreen.hpp"
+#include "screens/Clock/ClockScreen.hpp"
+#include "screens/Flashlight/FlashlightScreen.hpp"
+#include "screens/MenuApp/MenuAppScreen.hpp"
+#include "screens/NTP/NTPScreen.hpp"
+#include "screens/WiFi/WiFiScreen.hpp"
 
-#include "core/ScreenManager.h"
-#include "input/InputManager.h"
-#include "output/OutputManager.h"
+#include "core/ScreenManager.hpp"
+#include "input/InputManager.hpp"
+#include "output/OutputManager.hpp"
 
-const uint8_t PIN_UP_BTN     = 12;
-const uint8_t PIN_DOWN_BTN   = 13;
+const uint8_t PIN_UP_BTN = 12;
+const uint8_t PIN_DOWN_BTN = 13;
 const uint8_t PIN_SELECT_BTN = 14;
 
-const uint8_t PIN_LANTERN    = 16;
+const uint8_t PIN_LANTERN = 16;
 
 Display display;
 RTCManager rtc;
@@ -42,22 +42,23 @@ BootScreen bootScreen(&display, &menuAppScreen);
 ScreenManager screenManager(&bootScreen, &display, &rtc);
 
 void setup() {
-    display.begin();
+  display.begin();
 
-    menuAppScreen.setScreens(&clockScreen, &calendarScreen, &wifiScreen, &ntpScreen, &flashlightScreen);
+  menuAppScreen.setScreens(&clockScreen, &calendarScreen, &wifiScreen,
+                           &ntpScreen, &flashlightScreen);
 
-    screenManager.begin();
-    inputManager.begin();
-    outputManager.begin();
+  screenManager.begin();
+  inputManager.begin();
+  outputManager.begin();
 }
 
 void loop() {
-    screenManager.update();
-    inputManager.update();
-    outputManager.update();
+  screenManager.update();
+  inputManager.update();
+  outputManager.update();
 
-    ButtonEvent ev = inputManager.getEvent();
-    screenManager.handleInput(ev);
+  ButtonEvent ev = inputManager.getEvent();
+  screenManager.handleInput(ev);
 
-    screenManager.draw();
+  screenManager.draw();
 }

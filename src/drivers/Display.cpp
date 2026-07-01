@@ -1,89 +1,81 @@
-#include "Display.h"
+#include "Display.hpp"
 
 void Display::begin() {
-    u8g2.begin();
-    displayOn(true);
-    fontSet(u8g2_font_6x10_tr);
-    setDisplayContrast(0);
-    setAutoOff(5000);
+  u8g2.begin();
+  displayOn(true);
+  fontSet(u8g2_font_6x10_tr);
+  setDisplayContrast(0);
+  setAutoOff(5000);
 }
 
-void Display::clear() {
-    u8g2.clearBuffer();
-}
+void Display::clear() { u8g2.clearBuffer(); }
 
-void Display::display() {
-    u8g2.sendBuffer();
-}
+void Display::display() { u8g2.sendBuffer(); }
 
-int Display::getWStr(const char* text) {
-    return u8g2.getStrWidth(text);
-}
+int Display::getWStr(const char *text) { return u8g2.getStrWidth(text); }
 
-void Display::drawText(int x, int y, const char* text) {
-    u8g2.drawStr(x, y, text);
+void Display::drawText(int x, int y, const char *text) {
+  u8g2.drawStr(x, y, text);
 }
 
 void Display::drawFrame(int x, int y, int w, int h) {
-    u8g2.drawFrame(x, y, w, h);
+  u8g2.drawFrame(x, y, w, h);
 }
 
 void Display::drawColorSet(uint8_t colorIndex) {
-    u8g2.setDrawColor(colorIndex);
+  u8g2.setDrawColor(colorIndex);
 }
 
 void Display::drawBox(uint8_t x, uint8_t y, uint8_t w, uint8_t h) {
-    u8g2.drawBox(x, y, w, h);
+  u8g2.drawBox(x, y, w, h);
 }
 
-void Display::printCentered(const char* text, int y) {
-    int width = getWStr(text);
-    int x = (128 - width) / 2;
-    u8g2.drawStr(x, y, text);
+void Display::printCentered(const char *text, int y) {
+  int width = getWStr(text);
+  int x = (128 - width) / 2;
+  u8g2.drawStr(x, y, text);
 }
 
-void Display::fontSet(const uint8_t *font) {
-    u8g2.setFont(font);
-}
+void Display::fontSet(const uint8_t *font) { u8g2.setFont(font); }
 
 void Display::setDisplayContrast(int contrastLevel) {
-    u8g2.setContrast(contrastLevel);
+  u8g2.setContrast(contrastLevel);
 }
 
 void Display::displayOn(bool status) {
-    if (status) {
-        u8g2.setPowerSave(0);
-        statusDisplay = true;
-    } else {
-        u8g2.setPowerSave(1);
-        statusDisplay = false;
-    }
+  if (status) {
+    u8g2.setPowerSave(0);
+    statusDisplay = true;
+  } else {
+    u8g2.setPowerSave(1);
+    statusDisplay = false;
+  }
 }
 
-void Display::drawBitmap(int x, int y, int w, int h, const uint8_t* bitmap) {
-    u8g2.drawXBMP(x, y, w, h, bitmap);
+void Display::drawBitmap(int x, int y, int w, int h, const uint8_t *bitmap) {
+  u8g2.drawXBMP(x, y, w, h, bitmap);
 }
 
 void Display::drawHorizontalLine(int x, int y, int w) {
-    u8g2.drawHLine(x, y, w);
+  u8g2.drawHLine(x, y, w);
 }
 
-bool Display::getDisplayStatus() {
-    return statusDisplay;
-}
+bool Display::getDisplayStatus() { return statusDisplay; }
 
 void Display::setAutoOff(unsigned long timeout) {
-    autoOffTime = timeout;
-    lastInteraction = millis();
+  autoOffTime = timeout;
+  lastInteraction = millis();
 }
 
 void Display::handleAutoOff() {
-    if (statusDisplay && autoOffTime > 0 && millis() - lastInteraction >= autoOffTime) {
-        displayOn(false);
-    }
+  if (statusDisplay && autoOffTime > 0 &&
+      millis() - lastInteraction >= autoOffTime) {
+    displayOn(false);
+  }
 }
 
 void Display::resetAutoOff() {
-    lastInteraction = millis();
-    if (!statusDisplay) displayOn(true);
+  lastInteraction = millis();
+  if (!statusDisplay)
+    displayOn(true);
 }
