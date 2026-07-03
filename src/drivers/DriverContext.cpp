@@ -7,7 +7,7 @@ const uint8_t PIN_SELECT_BTN = 14;
 const uint8_t PIN_LANTERN = 16;
 
 Display display;
-RTCManager rtc;
+RTC rtc;
 Buttons buttons(PIN_UP_BTN, PIN_DOWN_BTN, PIN_SELECT_BTN);
 Lantern lantern(PIN_LANTERN);
 

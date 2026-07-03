@@ -7,13 +7,13 @@
 
 struct DriverContext {
   Display *display;
-  RTCManager *rtc;
+  RTC *rtc;
   Buttons *buttons;
   Lantern *lantern;
 };
 
 extern Display display;
-extern RTCManager rtc;
+extern RTC rtc;
 extern Buttons buttons;
 extern Lantern lantern;
 
