@@ -7,6 +7,11 @@
 
 enum class MenuScreenState { IDLE };
 
+struct AppRegistry {
+  const char *optionName;
+  ScreenID optionIdScreen;
+};
+
 class MenuAppScreen : public Screen {
 public:
   MenuAppScreen(DriverContext &ctx)
@@ -47,11 +52,7 @@ private:
   int selectedIndex = 0;
   int offset = 0;
   const int numMaxVisible = 5;
-
-  static constexpr const char *options[5] = {
-      "Relogio", "Calendario", "Tela WiFi", "Tela NTP", "Lanterna"};
-
-  static constexpr int numOptions = 5;
+  const int numOptions = 5;
 
   MenuScreenState screenState = MenuScreenState::IDLE;
 };

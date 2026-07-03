@@ -16,7 +16,6 @@ enum class ScreenID {
 
 struct ScreenRegistry {
   ScreenID id;
-
   Screen *(*creator)(DriverContext &);
 };
 

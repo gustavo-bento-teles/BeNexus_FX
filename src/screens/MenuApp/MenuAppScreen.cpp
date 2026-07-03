@@ -2,6 +2,12 @@
 #include "core/StaticRegistry.hpp"
 #include "screens/animations/LineGrowAnimation.hpp"
 
+const AppRegistry appsRegistry[5] = {{"Relogio", ScreenID::CLOCK},
+                                     {"Calendario", ScreenID::CALENDAR},
+                                     {"Tela WiFi", ScreenID::WIFI},
+                                     {"Tela NTP", ScreenID::NTP},
+                                     {"Lanterna", ScreenID::FLASHLIGHT}};
+
 void MenuAppScreen::begin() {
   nextTriggered = false;
   driverContext.display->fontSet(u8g2_font_6x10_tr);
@@ -10,8 +16,9 @@ void MenuAppScreen::begin() {
 
   animator.add(new LineGrowAnimation(
       22, 12 + (visibleIndex * 12),
-      driverContext.display->getWStr(options[selectedIndex]) - 19, 3, true,
-      true));
+      driverContext.display->getWStr(appsRegistry[selectedIndex].optionName) -
+          19,
+      3, true, true));
 }
 
 void MenuAppScreen::update() { animator.update(); }
@@ -30,7 +37,7 @@ void MenuAppScreen::draw() {
       break;
 
     String line = (index == selectedIndex) ? "> " : "  ";
-    line += options[index];
+    line += appsRegistry[index].optionName;
 
     driverContext.display->drawText(10, y + (i * 12), line.c_str());
   }
@@ -59,8 +66,9 @@ void MenuAppScreen::onUpPressed() {
 
   animator.add(new LineGrowAnimation(
       22, 12 + (visibleIndex * 12),
-      driverContext.display->getWStr(options[selectedIndex]) - 19, 3, true,
-      true));
+      driverContext.display->getWStr(appsRegistry[selectedIndex].optionName) -
+          19,
+      3, true, true));
 }
 
 void MenuAppScreen::onDownPressed() {
@@ -78,31 +86,12 @@ void MenuAppScreen::onDownPressed() {
 
   animator.add(new LineGrowAnimation(
       22, 12 + (visibleIndex * 12),
-      driverContext.display->getWStr(options[selectedIndex]) - 19, 3, true,
-      true));
+      driverContext.display->getWStr(appsRegistry[selectedIndex].optionName) -
+          19,
+      3, true, true));
 }
 
 void MenuAppScreen::onSelectPressed() {
-  switch (selectedIndex) {
-  case 0:
-    nextScreenID = ScreenID::CLOCK;
-    nextTriggered = true;
-    break;
-  case 1:
-    nextScreenID = ScreenID::CALENDAR;
-    nextTriggered = true;
-    break;
-  case 2:
-    nextScreenID = ScreenID::WIFI;
-    nextTriggered = true;
-    break;
-  case 3:
-    nextScreenID = ScreenID::NTP;
-    nextTriggered = true;
-    break;
-  case 4:
-    nextScreenID = ScreenID::FLASHLIGHT;
-    nextTriggered = true;
-    break;
-  }
+  nextScreenID = appsRegistry[selectedIndex].optionIdScreen;
+  nextTriggered = true;
 }
