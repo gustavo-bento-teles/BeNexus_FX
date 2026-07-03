@@ -2,11 +2,13 @@
 #include "core/StaticRegistry.hpp"
 #include "screens/animations/LineGrowAnimation.hpp"
 
-const AppRegistry appsRegistry[5] = {{"Relogio", ScreenID::CLOCK},
-                                     {"Calendario", ScreenID::CALENDAR},
-                                     {"Tela WiFi", ScreenID::WIFI},
-                                     {"Tela NTP", ScreenID::NTP},
-                                     {"Lanterna", ScreenID::FLASHLIGHT}};
+constexpr AppRegistry appsRegistry[5] = {{"Relogio", ScreenID::CLOCK},
+                                         {"Calendario", ScreenID::CALENDAR},
+                                         {"Tela WiFi", ScreenID::WIFI},
+                                         {"Tela NTP", ScreenID::NTP},
+                                         {"Lanterna", ScreenID::FLASHLIGHT}};
+
+constexpr uint8_t numOptions = sizeof(appsRegistry) / sizeof(appsRegistry[0]);
 
 void MenuAppScreen::begin() {
   nextTriggered = false;

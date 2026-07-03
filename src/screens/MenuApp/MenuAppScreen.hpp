@@ -52,7 +52,6 @@ private:
   int selectedIndex = 0;
   int offset = 0;
   const int numMaxVisible = 5;
-  const int numOptions = 5;
 
   MenuScreenState screenState = MenuScreenState::IDLE;
 };
