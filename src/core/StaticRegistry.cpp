@@ -8,14 +8,19 @@
 #include "screens/NTP/NTPScreen.hpp"
 #include "screens/WiFi/WiFiScreen.hpp"
 
+template <typename ScreenName>
+constexpr ScreenRegistry makeScreenRegistry(ScreenID id) {
+  return {id, &ScreenName::create};
+}
+
 static const ScreenRegistry registry[] = {
-    {ScreenID::BOOT, BootScreen::create},
-    {ScreenID::CALENDAR, CalendarScreen::create},
-    {ScreenID::CLOCK, ClockScreen::create},
-    {ScreenID::FLASHLIGHT, FlashlightScreen::create},
-    {ScreenID::MENUAPP, MenuAppScreen::create},
-    {ScreenID::NTP, NTPScreen::create},
-    {ScreenID::WIFI, WiFiScreen::create},
+    makeScreenRegistry<BootScreen>(ScreenID::BOOT),
+    makeScreenRegistry<CalendarScreen>(ScreenID::CALENDAR),
+    makeScreenRegistry<ClockScreen>(ScreenID::CLOCK),
+    makeScreenRegistry<FlashlightScreen>(ScreenID::FLASHLIGHT),
+    makeScreenRegistry<MenuAppScreen>(ScreenID::MENUAPP),
+    makeScreenRegistry<NTPScreen>(ScreenID::NTP),
+    makeScreenRegistry<WiFiScreen>(ScreenID::WIFI),
 };
 
 Screen *createScreen(ScreenID id, DriverContext &ctx) {

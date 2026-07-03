@@ -6,7 +6,7 @@ void BootScreen::begin() {
   driverContext.display->clear();
 
   driverContext.display->fontSet(u8g2_font_6x10_tr);
-  driverContext.display->printCentered("v2.5.0-dev", 10);
+  driverContext.display->printCentered("v2.5.1-dev", 10);
 
   driverContext.display->fontSet(u8g2_font_9x15_mf);
   driverContext.display->printCentered("BeNexus_FX", 32);
