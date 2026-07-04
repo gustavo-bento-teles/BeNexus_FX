@@ -10,6 +10,9 @@ constexpr AppRegistry appsRegistry[5] = {{"Relogio", ScreenID::CLOCK},
 
 constexpr uint8_t numOptions = sizeof(appsRegistry) / sizeof(appsRegistry[0]);
 
+int MenuAppScreen::selectedIndex = 0;
+int MenuAppScreen::offset = 0;
+
 void MenuAppScreen::begin() {
   nextTriggered = false;
   driverContext.display->fontSet(u8g2_font_6x10_tr);

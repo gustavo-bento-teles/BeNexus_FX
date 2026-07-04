@@ -49,8 +49,9 @@ private:
 
   Animator animator;
 
-  int selectedIndex = 0;
-  int offset = 0;
+  static int selectedIndex;
+  static int offset;
+
   const int numMaxVisible = 5;
 
   MenuScreenState screenState = MenuScreenState::IDLE;
