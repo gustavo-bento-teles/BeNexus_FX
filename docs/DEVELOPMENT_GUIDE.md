@@ -1,6 +1,6 @@
 # 🛠️ Guia de Desenvolvimento — BeNexus_FX
 
-Este guia cobre os padrões e passos necessários para estender o projeto: adicionar novos drivers de hardware, criar telas, implementar animações e seguir as convenções do codebase.
+Este guia cobre os padrões e passos necessários para estender o projeto: adicionar novos drivers de hardware, criar telas e implementar animações, seguindo as convenções atuais do codebase (baseadas em `DriverContext` e `StaticRegistry`).
 
 ---
 
@@ -22,45 +22,47 @@ Este guia cobre os padrões e passos necessários para estender o projeto: adici
 src/
 ├── main.cpp
 ├── core/
-│   └── ScreenManager.{h,cpp}
+│   ├── ScreenManager.{hpp,cpp}
+│   └── StaticRegistry.{hpp,cpp}      ← ScreenID + fábrica de telas
 ├── drivers/
-│   ├── Display.{h,cpp}
-│   ├── RTC.{h,cpp}
-│   ├── Buttons.{h,cpp}
-│   ├── Lantern.{h,cpp}
-│   └── <NovoDriver>.{h,cpp}      ← Novos drivers aqui
+│   ├── DriverContext.{hpp,cpp}       ← Struct central com todos os drivers
+│   ├── Display.{hpp,cpp}
+│   ├── RTC.{hpp,cpp}
+│   ├── Buttons.{hpp,cpp}
+│   ├── Lantern.{hpp,cpp}
+│   └── <NovoDriver>.{hpp,cpp}        ← Novos drivers aqui
 ├── screens/
-│   ├── Screen.{h,cpp}            ← Interface base
+│   ├── Screen.{hpp,cpp}              ← Interface base
 │   ├── animations/
-│   │   ├── Animation.h
-│   │   ├── Animator.h
-│   │   ├── LineGrowAnimation.h
-│   │   └── <NovaAnimacao>.h      ← Novas animações aqui
+│   │   ├── Animation.hpp
+│   │   ├── Animator.hpp
+│   │   ├── LineGrowAnimation.hpp
+│   │   └── <NovaAnimacao>.hpp        ← Novas animações aqui
 │   ├── Boot/
-│   │   └── BootScreen.{h,cpp}
+│   │   └── BootScreen.{hpp,cpp}
 │   ├── MenuApp/
-│   │   └── MenuAppScreen.{h,cpp}
+│   │   └── MenuAppScreen.{hpp,cpp}
 │   ├── Clock/
 │   ├── Calendar/
 │   ├── WiFi/
 │   ├── NTP/
 │   ├── Flashlight/
 │   └── <NovaTela>/
-│       └── <NovaTela>Screen.{h,cpp}   ← Novas telas aqui
+│       └── <NovaTela>Screen.{hpp,cpp}   ← Novas telas aqui
 ├── input/
-│   ├── InputManager.{h,cpp}
-│   └── ButtonEvent.h
-├── output/
-│   └── OutputManager.{h,cpp}
+│   ├── InputManager.{hpp,cpp}
+│   └── ButtonEvent.hpp
 └── services/
-    └── NetworkService.{h,cpp}
+    └── NetworkService.{hpp,cpp}
 ```
+
+> Não existe mais uma pasta `output/` ou `OutputManager`. Dispositivos de saída (como a `Lantern`) são acessados diretamente através do `DriverContext`.
 
 ---
 
 ## 🔌 Adicionando Novos Drivers
 
-Todo driver deve seguir o padrão de **arquivo duplo** (`.h` + `.cpp`) e implementar ao menos `begin()` para inicialização.
+Todo driver deve seguir o padrão de **arquivo duplo** (`.hpp` + `.cpp`) e implementar ao menos `begin()` para inicialização.
 
 ### Passo a Passo
 
@@ -68,7 +70,7 @@ Todo driver deve seguir o padrão de **arquivo duplo** (`.h` + `.cpp`) e impleme
 
 **Exemplo: Buzzer**
 
-**`src/drivers/Buzzer.h`**
+**`src/drivers/Buzzer.hpp`**
 ```cpp
 #pragma once
 #include <Arduino.h>
@@ -93,7 +95,7 @@ private:
 
 **`src/drivers/Buzzer.cpp`**
 ```cpp
-#include "Buzzer.h"
+#include "Buzzer.hpp"
 
 Buzzer::Buzzer(uint8_t buzzerPin)
     : pin(buzzerPin) {}
@@ -130,89 +132,84 @@ bool Buzzer::isPlaying() const {
 }
 ```
 
-#### 2. Classificar o Driver (Input ou Output)
+#### 2. Integrar ao `DriverContext`
 
-- **Dispositivos de SAÍDA** (LED, Buzzer, Motor): integrar ao `OutputManager`
-- **Dispositivos de ENTRADA** (sensores, botões extras): integrar ao `InputManager`
+Todo driver — de entrada ou saída — é registrado diretamente no `DriverContext`. Não há mais separação entre `InputManager`/`OutputManager` para posse dos drivers: essas classes apenas leem o `DriverContext` por referência.
 
-#### 3. Integrar no Manager Correspondente
-
-**`src/output/OutputManager.h`** — adicionar referência:
+**`src/drivers/DriverContext.hpp`**
 ```cpp
 #pragma once
-#include "drivers/Lantern.h"
-#include "drivers/Buzzer.h"  // ← novo include
 
-class OutputManager {
-public:
-    explicit OutputManager(Lantern& lantern, Buzzer& buzzer); // ← atualizar construtor
+#include "drivers/Buttons.hpp"
+#include "drivers/Buzzer.hpp"   // ← novo include
+#include "drivers/Display.hpp"
+#include "drivers/Lantern.hpp"
+#include "drivers/RTC.hpp"
 
-    void begin();
-    void update();
-
-    // Lantern
-    void setLantern(bool on);
-    void toggleLantern();
-    bool isLanternOn() const;
-
-    // Buzzer
-    void playBeep(uint16_t freq, uint16_t duration);
-    void playTone(uint16_t freq);
-    void stopSound();
-    bool isBuzzerPlaying() const;
-
-private:
-    Lantern& lantern;
-    Buzzer& buzzer;  // ← nova referência
+struct DriverContext {
+  Display *display;
+  RTC *rtc;
+  Buttons *buttons;
+  Lantern *lantern;
+  Buzzer *buzzer;               // ← novo campo
 };
+
+extern Display display;
+extern RTC rtc;
+extern Buttons buttons;
+extern Lantern lantern;
+extern Buzzer buzzer;           // ← nova instância global
+
+DriverContext initDriverContext();
 ```
 
-**`src/output/OutputManager.cpp`**:
+**`src/drivers/DriverContext.cpp`**
 ```cpp
-#include "output/OutputManager.h"
+#include "DriverContext.hpp"
 
-OutputManager::OutputManager(Lantern& l, Buzzer& b)
-    : lantern(l), buzzer(b) {}
+const uint8_t PIN_UP_BTN = 12;
+const uint8_t PIN_DOWN_BTN = 13;
+const uint8_t PIN_SELECT_BTN = 14;
 
-void OutputManager::begin() {
-    lantern.begin();
-    buzzer.begin();  // ← inicializa novo driver
-}
+const uint8_t PIN_LANTERN = 16;
+const uint8_t PIN_BUZZER = 15;   // ← novo pino
 
-void OutputManager::update() {
-    buzzer.update(); // ← propaga update se necessário
-}
+Display display;
+RTC rtc;
+Buttons buttons(PIN_UP_BTN, PIN_DOWN_BTN, PIN_SELECT_BTN);
+Lantern lantern(PIN_LANTERN);
+Buzzer buzzer(PIN_BUZZER);       // ← nova instância
 
-void OutputManager::playBeep(uint16_t freq, uint16_t duration) {
-    buzzer.beep(freq, duration);
-}
-
-void OutputManager::playTone(uint16_t freq) {
-    buzzer.playTone(freq);
-}
-
-void OutputManager::stopSound() {
-    buzzer.stopTone();
-}
-
-bool OutputManager::isBuzzerPlaying() const {
-    return buzzer.isPlaying();
+DriverContext initDriverContext() {
+  return {&display, &rtc, &buttons, &lantern, &buzzer};
 }
 ```
 
-#### 4. Atualizar main.cpp
+#### 3. Inicializar o Driver no `ScreenManager::begin()`
+
+Se o driver precisar de uma etapa de inicialização de hardware (`begin()`), adicione a chamada em `ScreenManager::begin()`, junto dos demais drivers:
 
 ```cpp
-#include "drivers/Buzzer.h"
+void ScreenManager::begin() {
+  driverContext.display->begin();
+  driverContext.rtc->begin();
+  driverContext.lantern->begin();
+  driverContext.buzzer->begin();   // ← novo driver inicializado aqui
 
-const uint8_t PIN_BUZZER = 15;
+  currentScreen = createScreen(initialScreenID, driverContext);
+  currentScreen->begin();
+}
+```
 
-Buzzer buzzer(PIN_BUZZER);
-OutputManager outputManager(lantern, buzzer); // ← atualizar construtor
+Se o driver exigir `update()` contínuo (como o auto-stop do `Buzzer`), chame-o em `ScreenManager::update()`.
 
-void setup() {
-    // ...
-    outputManager.begin(); // já inicializa o buzzer internamente
+#### 4. Consumir o Driver em uma Tela
+
+Qualquer tela recebe `DriverContext &` no construtor, então o novo driver já está disponível sem nenhuma mudança adicional de assinatura:
+
+```cpp
+void MinhaScreen::onSelectPressed() {
+  driverContext.buzzer->beep(1000, 100);
 }
 ```
 
@@ -224,19 +221,18 @@ void setup() {
 └────────┬────────┘
          │
     ┌────▼────┐
-    │ Driver  │  Buzzer.{h,cpp}
+    │ Driver  │  Buzzer.{hpp,cpp}
     │ begin() │
     │ update()│
     └────┬────┘
          │
-  ┌──────▼──────────┐
-  │ OutputManager   │  camada de abstração
-  │ playBeep()      │
-  └──────┬──────────┘
+  ┌──────▼───────────┐
+  │  DriverContext    │  struct com ponteiros para todos os drivers
+  └──────┬────────────┘
          │
-    ┌────▼─────┐
-    │  Screens │  consomem via OutputManager*
-    └──────────┘
+   ┌─────▼──────┐
+   │  Screens   │  consomem via driverContext.buzzer->...
+   └────────────┘
 ```
 
 ---
@@ -245,19 +241,24 @@ void setup() {
 
 ### Interface Obrigatória
 
-Toda tela **deve** herdar de `Screen` e implementar obrigatoriamente `draw()` e `getState()`.
+Toda tela **deve** herdar de `Screen` e implementar obrigatoriamente `draw()` e `getState()`. Também deve expor um método estático `create(DriverContext&)`, que será registrado no `StaticRegistry`.
 
 ```cpp
-// src/screens/Screen.h
+// src/screens/Screen.hpp
 class Screen {
 public:
+    virtual ~Screen() {}
+
     virtual const char* name()   { return "Unnamed"; }
     virtual void begin()         {}   // chamado ao entrar
     virtual void end()           {}   // chamado ao sair
     virtual void update()        {}   // lógica por frame
     virtual void draw() = 0;         // OBRIGATÓRIO
     virtual void handleInput(ButtonEvent ev);  // dispatch automático
-    virtual Screen* nextScreen() { return nullptr; }
+
+    virtual ScreenID selfScreenID() const { return ScreenID::NONE; }
+    virtual ScreenID nextScreen()   const { return ScreenID::NONE; }
+
     virtual uint8_t getState() const = 0; // OBRIGATÓRIO
 
 protected:
@@ -272,185 +273,169 @@ protected:
 
 ### Passo a Passo
 
-#### 1. Criar os Arquivos da Tela
+#### 1. Registrar o `ScreenID`
+
+**`src/core/StaticRegistry.hpp`** — adicionar o identificador da nova tela:
+```cpp
+enum class ScreenID {
+  NONE,
+  BOOT,
+  CALENDAR,
+  CLOCK,
+  FLASHLIGHT,
+  MENUAPP,
+  NTP,
+  STOPWATCH,   // ← novo ScreenID
+  WIFI
+};
+```
+
+#### 2. Criar os Arquivos da Tela
 
 **Exemplo: Cronômetro**
 
-**`src/screens/Stopwatch/StopwatchScreen.h`**
+**`src/screens/Stopwatch/StopwatchScreen.hpp`**
 ```cpp
 #pragma once
-#include "screens/Screen.h"
-#include "drivers/Display.h"
+#include "core/StaticRegistry.hpp"
+#include "drivers/DriverContext.hpp"
+#include "screens/Screen.hpp"
 
 enum class StopwatchState {
-    STOPPED,
-    RUNNING
+  STOPPED,
+  RUNNING
 };
 
 class StopwatchScreen : public Screen {
 public:
-    StopwatchScreen(Display* disp, Screen* menuScreen);
+  StopwatchScreen(DriverContext &ctx, ScreenID next)
+      : driverContext(ctx), nextScreenID(next), nextTriggered(false) {}
 
-    const char* name() override { return "StopwatchScreen"; }
+  const char *name() override { return "StopwatchScreen"; }
 
-    void begin()  override;
-    void update() override;
-    void draw()   override;
-    void end()    override;
+  void begin() override;
+  void update() override;
+  void draw() override;
+  void end() override;
 
-    Screen* nextScreen() override;
-    uint8_t getState() const override { return static_cast<uint8_t>(screenState); }
+  ScreenID selfScreenID() const override { return ScreenID::STOPWATCH; }
+
+  ScreenID nextScreen() const override {
+    return nextTriggered ? nextScreenID : ScreenID::STOPWATCH;
+  }
+
+  static Screen *create(DriverContext &driverContext) {
+    return new StopwatchScreen(driverContext, ScreenID::MENUAPP);
+  }
+
+  uint8_t getState() const override { return static_cast<uint8_t>(screenState); }
 
 protected:
-    void onSelectPressed() override; // Start/Stop
-    void onUpPressed()     override; // Reset
-    void onDownHeld()      override; // Voltar ao menu
+  void onSelectPressed() override; // Start/Stop
+  void onUpPressed()     override; // Reset
+  void onDownHeld()      override; // Voltar ao menu
 
 private:
-    Display* display;
-    Screen*  backScreen;
+  DriverContext &driverContext;
+  ScreenID nextScreenID;
+  bool nextTriggered;
 
-    bool          running     = false;
-    unsigned long startTime   = 0;
-    unsigned long elapsedTime = 0;
-    bool          shouldGoBack = false;
+  bool          running     = false;
+  unsigned long startTime   = 0;
+  unsigned long elapsedTime = 0;
 
-    StopwatchState screenState = StopwatchState::STOPPED;
+  StopwatchState screenState = StopwatchState::STOPPED;
 
-    String formatTime(unsigned long ms);
+  String formatTime(unsigned long ms);
 };
 ```
 
 **`src/screens/Stopwatch/StopwatchScreen.cpp`**
 ```cpp
-#include "StopwatchScreen.h"
-
-StopwatchScreen::StopwatchScreen(Display* disp, Screen* menu)
-    : display(disp), backScreen(menu) {}
+#include "StopwatchScreen.hpp"
 
 void StopwatchScreen::begin() {
-    shouldGoBack = false;
-    running      = false;
-    elapsedTime  = 0;
-    screenState  = StopwatchState::STOPPED;
-    display->clear();
-    display->display();
+  nextTriggered = false;
+  running       = false;
+  elapsedTime   = 0;
+  screenState   = StopwatchState::STOPPED;
+  driverContext.display->clear();
+  driverContext.display->display();
 }
 
 void StopwatchScreen::update() {
-    if (running) {
-        elapsedTime = millis() - startTime;
-        screenState = StopwatchState::RUNNING;
-    }
+  if (running) {
+    elapsedTime = millis() - startTime;
+  }
 }
 
 void StopwatchScreen::draw() {
-    display->clear();
-
-    display->fontSet(u8g2_font_6x10_tr);
-    display->printCentered("CRONOMETRO", 10);
-
-    display->fontSet(u8g2_font_10x20_tr);
-    display->printCentered(formatTime(elapsedTime).c_str(), 35);
-
-    display->fontSet(u8g2_font_6x10_tr);
-    display->printCentered(running ? "RODANDO" : "PARADO", 55);
-
-    display->display();
+  driverContext.display->clear();
+  driverContext.display->printCentered(formatTime(elapsedTime).c_str(), 32);
+  driverContext.display->display();
 }
 
 void StopwatchScreen::end() {
-    display->clear();
-    display->display();
-}
-
-Screen* StopwatchScreen::nextScreen() {
-    return shouldGoBack ? backScreen : this;
+  driverContext.display->clear();
+  driverContext.display->display();
 }
 
 void StopwatchScreen::onSelectPressed() {
-    if (running) {
-        running     = false;
-        screenState = StopwatchState::STOPPED;
-    } else {
-        running    = true;
-        startTime  = millis() - elapsedTime;
-        screenState = StopwatchState::RUNNING;
-    }
+  running = !running;
+  screenState = running ? StopwatchState::RUNNING : StopwatchState::STOPPED;
+  if (running) startTime = millis() - elapsedTime;
 }
 
 void StopwatchScreen::onUpPressed() {
-    running     = false;
-    elapsedTime = 0;
-    screenState = StopwatchState::STOPPED;
+  elapsedTime = 0;
 }
 
 void StopwatchScreen::onDownHeld() {
-    shouldGoBack = true;
+  nextTriggered = true;
 }
 
 String StopwatchScreen::formatTime(unsigned long ms) {
-    unsigned long secs    = ms / 1000;
-    unsigned long mins    = secs / 60;
-    secs                  = secs % 60;
-    unsigned long centis  = (ms % 1000) / 10;
-
-    char buf[12];
-    sprintf(buf, "%02lu:%02lu.%02lu", mins, secs, centis);
-    return String(buf);
+  unsigned long totalSeconds = ms / 1000;
+  char buf[9];
+  sprintf(buf, "%02lu:%02lu:%02lu", totalSeconds / 3600,
+          (totalSeconds / 60) % 60, totalSeconds % 60);
+  return String(buf);
 }
 ```
 
-#### 2. Instanciar no main.cpp
+#### 3. Registrar a Tela no `StaticRegistry`
 
+**`src/core/StaticRegistry.cpp`** — incluir o header e adicionar uma linha na tabela de registro:
 ```cpp
-#include "screens/Stopwatch/StopwatchScreen.h"
+#include "screens/Stopwatch/StopwatchScreen.hpp"   // ← novo include
 
-StopwatchScreen stopwatchScreen(&display, &menuAppScreen);
-```
-
-#### 3. Adicionar ao Menu
-
-Editar `MenuAppScreen.h` e `MenuAppScreen.cpp`:
-
-```cpp
-// MenuAppScreen.h — adicionar ponteiro e opção
-Screen* stopwatchScreen;
-
-static constexpr const char* options[6] = {
-    "Relogio",
-    "Calendario",
-    "Tela WiFi",
-    "Tela NTP",
-    "Lanterna",
-    "Cronometro"   // ← nova entrada
+static const ScreenRegistry registry[] = {
+    makeScreenRegistry<BootScreen>(ScreenID::BOOT),
+    makeScreenRegistry<CalendarScreen>(ScreenID::CALENDAR),
+    makeScreenRegistry<ClockScreen>(ScreenID::CLOCK),
+    makeScreenRegistry<FlashlightScreen>(ScreenID::FLASHLIGHT),
+    makeScreenRegistry<MenuAppScreen>(ScreenID::MENUAPP),
+    makeScreenRegistry<NTPScreen>(ScreenID::NTP),
+    makeScreenRegistry<StopwatchScreen>(ScreenID::STOPWATCH), // ← nova linha
+    makeScreenRegistry<WiFiScreen>(ScreenID::WIFI),
 };
-static constexpr int numOptions = 6;
-
-// Atualizar setScreens() para receber a nova tela
-void setScreens(Screen* clk, Screen* calendar, Screen* wifi,
-                Screen* ntp, Screen* flash, Screen* stopwatch);
 ```
 
+Não é necessário instanciar a tela em `main.cpp` nem passar ponteiros manualmente — o `ScreenManager` a criará sob demanda via `createScreen()` sempre que outra tela retornar `ScreenID::STOPWATCH` em `nextScreen()`.
+
+#### 4. Adicionar a Entrada no `MenuAppScreen`
+
+**`src/screens/MenuApp/MenuAppScreen.cpp`** — incluir a nova opção na tabela `appsRegistry`:
 ```cpp
-// MenuAppScreen.cpp — adicionar case no switch
-case 5:
-    nextScreenPtr = stopwatchScreen;
-    nextTriggered = true;
-    break;
+constexpr AppRegistry appsRegistry[6] = {{"Relogio", ScreenID::CLOCK},
+                                         {"Calendario", ScreenID::CALENDAR},
+                                         {"Tela WiFi", ScreenID::WIFI},
+                                         {"Tela NTP", ScreenID::NTP},
+                                         {"Lanterna", ScreenID::FLASHLIGHT},
+                                         {"Cronometro", ScreenID::STOPWATCH}}; // ← nova entrada
 ```
 
-```cpp
-// main.cpp — atualizar chamada de setScreens
-menuAppScreen.setScreens(
-    &clockScreen,
-    &calendarScreen,
-    &wifiScreen,
-    &ntpScreen,
-    &flashlightScreen,
-    &stopwatchScreen    // ← nova tela
-);
-```
+O `numOptions` é calculado automaticamente via `sizeof(appsRegistry) / sizeof(appsRegistry[0])`, portanto nenhum ajuste manual de contagem é necessário.
 
 ---
 
@@ -458,9 +443,10 @@ menuAppScreen.setScreens(
 
 ### Interface `Animation`
 
-**`src/screens/animations/Animation.h`**
+**`src/screens/animations/Animation.hpp`**
 ```cpp
 #pragma once
+#include "drivers/Display.hpp"
 
 class Animation {
 public:
@@ -487,10 +473,10 @@ animator.clear();                     // delete todos (usar em end())
 **Exemplo: FadeAnimation**
 
 ```cpp
-// src/screens/animations/FadeAnimation.h
+// src/screens/animations/FadeAnimation.hpp
 #pragma once
-#include "Animation.h"
-#include "drivers/Display.h"
+#include "Animation.hpp"
+#include "drivers/Display.hpp"
 
 class FadeAnimation : public Animation {
 public:
@@ -538,16 +524,16 @@ void MinhaScreen::update() {
 }
 
 void MinhaScreen::draw() {
-    display->clear();
-    animator.draw(display); // renderiza animações por cima
+    driverContext.display->clear();
+    animator.draw(driverContext.display); // renderiza animações por cima
     // ... resto da UI
-    display->display();
+    driverContext.display->display();
 }
 
 void MinhaScreen::end() {
     animator.clear(); // SEMPRE limpar em end()
-    display->clear();
-    display->display();
+    driverContext.display->clear();
+    driverContext.display->display();
 }
 ```
 
@@ -569,7 +555,7 @@ LineGrowAnimation(
 **Cálculo de largura para alinhar ao texto:**
 ```cpp
 // Padrão usado no MenuAppScreen
-int width = display->getWStr(options[selectedIndex]) - 19;
+int width = driverContext.display->getWStr(options[selectedIndex]) - 19;
 animator.add(new LineGrowAnimation(22, y, width, 3, true, true));
 ```
 
@@ -585,21 +571,22 @@ void ClockScreen::draw() {
     digitalWrite(16, HIGH); // nunca!
 }
 
-// ✅ CORRETO: usar a camada de abstração
-void ClockScreen::update() {
-    if (needLight) outputManager->setLantern(true);
+// ✅ CORRETO: usar o driver correspondente via DriverContext
+void FlashlightScreen::onSelectPressed() {
+    driverContext.lantern->toggle();
 }
 ```
 
 ### Transições de Tela
 
 ```cpp
-// ✅ CORRETO: sempre via nextScreen()
-Screen* nextScreen() override {
-    return shouldTransition ? targetScreen : this;
+// ✅ CORRETO: sempre via nextScreen(), retornando um ScreenID
+ScreenID nextScreen() const override {
+    return nextTriggered ? nextScreenID : selfScreenID();
 }
 
-// ❌ ERRADO: não acesse screenManager diretamente de uma tela
+// ❌ ERRADO: não acesse o ScreenManager diretamente a partir de uma tela,
+//            nem tente guardar/retornar Screen* — a navegação é feita por ScreenID
 ```
 
 ### Gerenciamento de Memória com Animator
@@ -614,24 +601,39 @@ animator.add(anim);
 delete anim; // CRASH — Animator já vai deletar
 ```
 
+### Gerenciamento de Memória das Telas
+
+O `ScreenManager` aloca cada tela com `new` ao entrar nela e a destrói com `delete` ao sair. Isso significa que:
+
+- Nenhuma tela deve ser instanciada manualmente em `main.cpp`.
+- Todo estado que precisa sobreviver entre transições (como `selectedIndex` do `MenuAppScreen`) deve ser declarado como membro `static` da classe, e não como membro de instância.
+
+```cpp
+// ✅ CORRETO: estado persistente entre recriações da tela
+static int selectedIndex;
+
+// ❌ ERRADO: seria resetado toda vez que a tela for recriada
+int selectedIndex = 0;
+```
+
 ### Inicialização e Limpeza
 
 ```cpp
 void MinhaScreen::begin() {
     // Sempre resetar estado ao entrar
     counter      = 0;
-    triggered    = false;
+    nextTriggered = false;
     screenState  = MinhaState::IDLE;
     animator.clear();
-    display->clear();
-    display->display();
+    driverContext.display->clear();
+    driverContext.display->display();
 }
 
 void MinhaScreen::end() {
     // Sempre limpar recursos ao sair
     animator.clear();
-    display->clear();
-    display->display();
+    driverContext.display->clear();
+    driverContext.display->display();
 }
 ```
 
@@ -661,11 +663,12 @@ void MinhaScreen::update() {
 ### Nomenclatura
 
 ```cpp
-class MenuAppScreen {};         // Classes: PascalCase
-int selectedIndex = 0;          // Variáveis: camelCase
+class MenuAppScreen {};          // Classes: PascalCase
+int selectedIndex = 0;           // Variáveis: camelCase
 void handleInput();              // Métodos: camelCase
-const uint8_t PIN_BUZZER = 15;  // Constantes: UPPER_SNAKE_CASE
-enum class BootScreenState {};  // Enums de estado: PascalCase + "State"
+const uint8_t PIN_BUZZER = 15;   // Constantes: UPPER_SNAKE_CASE
+enum class BootScreenState {};   // Enums de estado: PascalCase + "State"
+enum class ScreenID {};          // Identificadores de tela: PascalCase
 ```
 
 ---
@@ -673,25 +676,28 @@ enum class BootScreenState {};  // Enums de estado: PascalCase + "State"
 ## 🚀 Checklists
 
 ### Adicionando Driver
-- [ ] Criar `Driver.h` e `Driver.cpp` em `src/drivers/`
+- [ ] Criar `Driver.hpp` e `Driver.cpp` em `src/drivers/`
 - [ ] Implementar `begin()`
 - [ ] Implementar `update()` se necessário (auto-stop, polling, etc.)
-- [ ] Integrar ao `InputManager` ou `OutputManager`
-- [ ] Atualizar o construtor do manager correspondente
-- [ ] Instanciar em `main.cpp` e passar ao manager
-- [ ] Definir pino GPIO como constante em `main.cpp`
+- [ ] Adicionar o ponteiro do driver ao struct `DriverContext`
+- [ ] Declarar a instância global e o pino em `DriverContext.cpp`
+- [ ] Atualizar `initDriverContext()` para incluir o novo ponteiro
+- [ ] Chamar `begin()` do driver em `ScreenManager::begin()`
+- [ ] Chamar `update()` do driver em `ScreenManager::update()`, se aplicável
 
 ### Criando Tela
+- [ ] Adicionar o novo `ScreenID` em `StaticRegistry.hpp`
 - [ ] Herdar de `Screen`
 - [ ] Implementar `draw()` (obrigatório)
 - [ ] Implementar `getState()` com enum de estado (obrigatório)
 - [ ] Implementar `name()` para debug
 - [ ] Implementar `begin()` com reset de estado e limpeza do display
 - [ ] Implementar `end()` com `animator.clear()` e limpeza do display
-- [ ] Implementar `nextScreen()` para navegação
+- [ ] Implementar `selfScreenID()` e `nextScreen()`
+- [ ] Implementar o método estático `create(DriverContext&)`
 - [ ] Fazer override dos callbacks de botão necessários
-- [ ] Instanciar em `main.cpp`
-- [ ] Adicionar ao `MenuAppScreen`
+- [ ] Registrar a tela na tabela `registry[]` em `StaticRegistry.cpp`
+- [ ] Adicionar a entrada correspondente em `appsRegistry` (`MenuAppScreen.cpp`)
 
 ### Criando Animação
 - [ ] Herdar de `Animation`
@@ -707,9 +713,9 @@ enum class BootScreenState {};  // Enums de estado: PascalCase + "State"
 ### Tela não aparece
 ```cpp
 void MinhaScreen::draw() {
-    display->clear();
+    driverContext.display->clear();
     // ...
-    display->display(); // ← você esqueceu isso
+    driverContext.display->display(); // ← você esqueceu isso
 }
 ```
 
@@ -719,27 +725,32 @@ void MinhaScreen::update() {
     animator.update(); // ← necessário todo frame
 }
 void MinhaScreen::draw() {
-    animator.draw(display); // ← necessário todo frame
+    animator.draw(driverContext.display); // ← necessário todo frame
 }
 ```
 
 ### Tela fica presa / não transita
 ```cpp
-// Certifique que nextScreen() retorna o ponteiro correto
-Screen* nextScreen() override {
-    return triggered ? nextScreenPtr : this; // ← null aqui causa crash
+// Certifique-se de que nextScreen() retorna o ScreenID correto
+ScreenID nextScreen() const override {
+    return nextTriggered ? nextScreenID : selfScreenID(); // ← selfScreenID() aqui, não NONE
 }
-// E que triggered é setado corretamente em algum callback
+// E que nextTriggered é setado corretamente em algum callback
 ```
 
+Verifique também se a tela foi registrada em `StaticRegistry.cpp`: se `createScreen()` não encontrar o `ScreenID` na tabela, retorna `nullptr`, e o `ScreenManager` não fará a transição.
+
 ### Display some depois de 5 segundos
-Isso é o auto-off normal. Se quiser desabilitar em uma tela específica, chame `display->resetAutoOff()` no `update()`. Mas prefira implementar `getState()` corretamente — o `ScreenManager` faz isso automaticamente.
+Isso é o auto-off normal. Se quiser desabilitar em uma tela específica, chame `driverContext.display->resetAutoOff()` no `update()`. Mas prefira implementar `getState()` corretamente — o `ScreenManager` faz isso automaticamente.
 
 ### Driver não responde
 ```cpp
-void OutputManager::begin() {
-    lantern.begin();
-    buzzer.begin(); // ← você adicionou ao begin()?
+void ScreenManager::begin() {
+  driverContext.display->begin();
+  driverContext.rtc->begin();
+  driverContext.lantern->begin();
+  driverContext.buzzer->begin(); // ← você adicionou a chamada de begin() do novo driver?
+  // ...
 }
 ```
 
@@ -750,15 +761,13 @@ void MinhaScreen::end() {
 }
 ```
 
+Lembre-se também que o próprio `ScreenManager` já cuida do `delete` da tela anterior a cada transição — não é necessário (nem correto) gerenciar isso manualmente dentro da tela.
+
 ---
 
 ## 📚 Recursos Adicionais
 
 - Veja as telas já implementadas como referência de padrão real
-- Padrões de projeto utilizados: **State** (telas), **Observer** (eventos), **Strategy** (animações)
+- Padrões de projeto utilizados: **Factory** (`StaticRegistry`/`createScreen`), **State** (telas), **Observer** (eventos), **Strategy** (animações)
 - Documentação das bibliotecas no `platformio.ini`
 - Pinout completo e arquitetura geral no `README.md`
-
----
-
-**Bora codar! 🎮**
