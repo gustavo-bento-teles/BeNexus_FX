@@ -30,33 +30,34 @@ const unsigned char epd_bitmap_lanternaLigada[] PROGMEM = {
 
 void FlashlightScreen::begin() {
   nextTriggered = false;
-  display->fontSet(u8g2_font_6x10_tr);
+  driverContext.display->fontSet(u8g2_font_6x10_tr);
 }
 
 void FlashlightScreen::update() {}
 
 void FlashlightScreen::draw() {
-  display->clear();
-  display->fontSet(u8g2_font_6x10_tr);
+  driverContext.display->clear();
+  driverContext.display->fontSet(u8g2_font_6x10_tr);
 
-  if (output->isLanternOn()) {
-    display->drawBitmap(48, 8, 32, 32, epd_bitmap_lanternaLigada);
-    display->printCentered("[Lantern ON]", 60);
+  if (driverContext.lantern->getLanternStatus()) {
+    driverContext.display->drawBitmap(48, 8, 32, 32, epd_bitmap_lanternaLigada);
+    driverContext.display->printCentered("[Lantern ON]", 60);
   } else {
-    display->drawBitmap(48, 8, 32, 32, epd_bitmap_lanternaDesligada);
-    display->printCentered("[Lantern OFF]", 60);
+    driverContext.display->drawBitmap(48, 8, 32, 32,
+                                      epd_bitmap_lanternaDesligada);
+    driverContext.display->printCentered("[Lantern OFF]", 60);
   }
 
-  display->display();
+  driverContext.display->display();
 }
 
 void FlashlightScreen::end() {
-  display->clear();
-  display->display();
+  driverContext.display->clear();
+  driverContext.display->display();
 }
 
 void FlashlightScreen::onUpPressed() { nextTriggered = true; }
 
 void FlashlightScreen::onDownPressed() { nextTriggered = true; }
 
-void FlashlightScreen::onSelectPressed() { output->toggleLantern(); }
+void FlashlightScreen::onSelectPressed() { driverContext.lantern->toggle(); }

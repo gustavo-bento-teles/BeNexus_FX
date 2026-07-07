@@ -1,15 +1,22 @@
 #pragma once
-#include "drivers/Display.hpp"
+#include "core/StaticRegistry.hpp"
+#include "drivers/DriverContext.hpp"
 #include "screens/Screen.hpp"
 
 #include "screens/animations/Animator.hpp"
 
 enum class MenuScreenState { IDLE };
 
+struct AppRegistry {
+  const char *optionName;
+  ScreenID optionIdScreen;
+};
+
 class MenuAppScreen : public Screen {
 public:
-  MenuAppScreen(Display *disp)
-      : display(disp), nextScreenPtr(nullptr), nextTriggered(false) {}
+  MenuAppScreen(DriverContext &ctx)
+      : driverContext(ctx), nextScreenID(ScreenID::MENUAPP),
+        nextTriggered(false) {}
 
   const char *name() override { return "MenuAppScreen"; }
 
@@ -18,15 +25,14 @@ public:
   void draw() override;
   void end() override;
 
-  Screen *nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
+  ScreenID selfScreenID() const override { return ScreenID::MENUAPP; }
 
-  void setScreens(Screen *clk, Screen *calendar, Screen *wifi, Screen *ntp,
-                  Screen *flash) {
-    clockScreen = clk;
-    calendarScreen = calendar;
-    wifiScreen = wifi;
-    ntpScreen = ntp;
-    flashlightScreen = flash;
+  ScreenID nextScreen() const override {
+    return nextTriggered ? nextScreenID : ScreenID::MENUAPP;
+  }
+
+  static Screen *create(DriverContext &driverContext) {
+    return new MenuAppScreen(driverContext);
   }
 
   uint8_t getState() const override { return static_cast<int>(screenState); }
@@ -37,26 +43,16 @@ protected:
   void onSelectPressed() override;
 
 private:
-  Screen *clockScreen;
-  Screen *calendarScreen;
-  Screen *wifiScreen;
-  Screen *ntpScreen;
-  Screen *flashlightScreen;
-
-  Display *display;
-  Screen *nextScreenPtr;
+  DriverContext &driverContext;
+  ScreenID nextScreenID;
   bool nextTriggered;
 
   Animator animator;
 
-  int selectedIndex = 0;
-  int offset = 0;
+  static int selectedIndex;
+  static int offset;
+
   const int numMaxVisible = 5;
-
-  static constexpr const char *options[5] = {
-      "Relogio", "Calendario", "Tela WiFi", "Tela NTP", "Lanterna"};
-
-  static constexpr int numOptions = 5;
 
   MenuScreenState screenState = MenuScreenState::IDLE;
 };

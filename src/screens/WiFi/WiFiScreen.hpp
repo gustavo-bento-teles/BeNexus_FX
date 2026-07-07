@@ -1,5 +1,6 @@
 #pragma once
-#include "drivers/Display.hpp"
+#include "core/StaticRegistry.hpp"
+#include "drivers/DriverContext.hpp"
 #include "screens/Screen.hpp"
 #include <ESP8266WiFi.h>
 
@@ -7,8 +8,8 @@ enum class WiFiScreenState { IDLE, CONNECTED, CONNECTING, FAILED };
 
 class WiFiScreen : public Screen {
 public:
-  WiFiScreen(Display *disp, Screen *next)
-      : display(disp), nextScreenPtr(next), nextTriggered(false) {}
+  WiFiScreen(DriverContext &ctx, ScreenID next)
+      : driverContext(ctx), nextScreenID(next), nextTriggered(false) {}
 
   const char *name() override { return "WiFiScreen"; }
 
@@ -17,7 +18,15 @@ public:
   void draw() override;
   void end() override;
 
-  Screen *nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
+  ScreenID selfScreenID() const override { return ScreenID::WIFI; }
+
+  ScreenID nextScreen() const override {
+    return nextTriggered ? nextScreenID : ScreenID::WIFI;
+  }
+
+  static Screen *create(DriverContext &driverContext) {
+    return new WiFiScreen(driverContext, ScreenID::MENUAPP);
+  }
 
   uint8_t getState() const override { return static_cast<int>(screenState); }
 
@@ -27,8 +36,8 @@ protected:
   void onSelectPressed() override;
 
 private:
-  Display *display;
-  Screen *nextScreenPtr;
+  DriverContext &driverContext;
+  ScreenID nextScreenID;
   bool nextTriggered;
 
   WiFiScreenState screenState = WiFiScreenState::IDLE;

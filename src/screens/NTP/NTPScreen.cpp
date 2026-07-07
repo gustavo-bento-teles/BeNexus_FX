@@ -1,38 +1,38 @@
 #include "NTPScreen.hpp"
+#include "core/StaticRegistry.hpp"
 #include "services/NetworkService.hpp"
 #include <Arduino.h>
 
 void NTPScreen::begin() {
   nextTriggered = false;
-  display->fontSet(u8g2_font_6x10_tr);
-  nextScreenPtr = menuAppScreen;
+  driverContext.display->fontSet(u8g2_font_6x10_tr);
 }
 
 void NTPScreen::update() {}
 
 void NTPScreen::draw() {
-  display->clear();
+  driverContext.display->clear();
 
-  display->printCentered("Tela NTP", 8);
+  driverContext.display->printCentered("Tela NTP", 8);
 
   if (NetworkService::isConnected()) {
     screenState = NTPScreenState::CONNECTED;
 
-    display->printCentered("[Atualizar NTP]", 38);
+    driverContext.display->printCentered("[Atualizar NTP]", 38);
   } else {
     screenState = NTPScreenState::DISCONNECTED;
 
-    display->printCentered("Sem WiFi disponivel!", 30);
-    display->printCentered("Use [tela WiFi]", 45);
-    display->printCentered("para conectar", 55);
+    driverContext.display->printCentered("Sem WiFi disponivel!", 30);
+    driverContext.display->printCentered("Use [tela WiFi]", 45);
+    driverContext.display->printCentered("para conectar", 55);
   }
 
-  display->display();
+  driverContext.display->display();
 }
 
 void NTPScreen::end() {
-  display->clear();
-  display->display();
+  driverContext.display->clear();
+  driverContext.display->display();
 }
 
 void NTPScreen::onUpPressed() { nextTriggered = true; }
@@ -43,7 +43,7 @@ void NTPScreen::onSelectPressed() {
   if (NetworkService::isConnected()) {
     atualizarNTP();
   } else {
-    nextScreenPtr = wifiScreen;
+    nextScreenID = ScreenID::WIFI;
     nextTriggered = true;
   }
 }
@@ -51,10 +51,10 @@ void NTPScreen::onSelectPressed() {
 void NTPScreen::atualizarNTP() {
   screenState = NTPScreenState::UPDATING;
 
-  display->clear();
-  display->printCentered("Atualizando NTP...", 32);
-  display->printCentered("Aguarde...", 45);
-  display->display();
+  driverContext.display->clear();
+  driverContext.display->printCentered("Atualizando NTP...", 32);
+  driverContext.display->printCentered("Aguarde...", 45);
+  driverContext.display->display();
 
   if (firstClient) {
     timeClient.begin();
@@ -62,25 +62,25 @@ void NTPScreen::atualizarNTP() {
   }
 
   bool ok = timeClient.forceUpdate();
-  display->clear();
+  driverContext.display->clear();
 
   if (!ok) {
-    display->printCentered("Atualizacao falhou!", 32);
-    display->display();
+    driverContext.display->printCentered("Atualizacao falhou!", 32);
+    driverContext.display->display();
     delay(1000);
     return;
   }
 
-  display->printCentered("NTP atualizado!", 32);
-  display->display();
+  driverContext.display->printCentered("NTP atualizado!", 32);
+  driverContext.display->display();
   delay(1000);
 
   time_t rawtime = timeClient.getEpochTime();
   struct tm *ti = localtime(&rawtime);
-  rtcManager->setDateTime(ti);
+  driverContext.rtc->setDateTime(ti);
 
-  display->clear();
-  display->printCentered("RTC atualizado!", 32);
-  display->display();
+  driverContext.display->clear();
+  driverContext.display->printCentered("RTC atualizado!", 32);
+  driverContext.display->display();
   delay(1000);
 }

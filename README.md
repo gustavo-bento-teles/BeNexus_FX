@@ -2,15 +2,15 @@
 
 > Firmware para ESP8266 (ESP-12E) que simula um smartwatch minimalista com relógio, calendário, lanterna, WiFi e sincronização NTP.
 
-**Versão:** 2.4.0-stable  
+**Versão:** v2-stable  
 **Plataforma:** ESP8266 (ESP-12E)  
-**Framework:** Arduino (via PlatformIO)
+**Framework:** Arduino (via PlatformIO)  
 
 ---
 
 ## 🎯 Visão Geral
 
-O BeNexus_FX é um firmware modular para ESP8266, projetado em camadas com separação clara de responsabilidades. A interação com o usuário acontece por meio de três botões físicos e um display OLED SH1106 128×64, com navegação baseada em eventos e troca de telas via ponteiros.
+O BeNexus_FX é um firmware modular para ESP8266, projetado em camadas com separação clara de responsabilidades. A interação com o usuário acontece por meio de três botões físicos e um display OLED SH1106 128×64, com navegação orientada a eventos e troca de telas via um **registro estático de fábricas**, responsável por instanciar cada tela sob demanda.
 
 ---
 
@@ -38,23 +38,27 @@ O BeNexus_FX é um firmware modular para ESP8266, projetado em camadas com separ
 ## 🏗️ Arquitetura do Sistema
 
 ```
-┌─────────────────────────────────────┐
-│         main.cpp (Ponto de entrada) │
-├─────────────────────────────────────┤
-│    ScreenManager (Orquestrador)     │
-├──────────────┬──────────────────────┤
-│ InputManager │   OutputManager      │
-├──────────────┴──────────────────────┤
-│         Screens (Views)             │
-│  Screen (base) → telas concretas    │
-├─────────────────────────────────────┤
-│    Drivers (Hardware Abstraction)   │
-│  Display · RTC · Buttons · Lantern  │
-├─────────────────────────────────────┤
-│      Services (Network, etc)        │
-│        NetworkService (static)      │
-└─────────────────────────────────────┘
+┌───────────────────────────────────────┐
+│         main.cpp (Ponto de entrada)   │
+├────────────────────────────────────────┤
+│    ScreenManager (Orquestrador)       │
+│  ScreenID + DriverContext + Registry  │
+├──────────────┬─────────────────────────┤
+│ InputManager │   StaticRegistry        │
+│              │   (fábrica de telas)    │
+├──────────────┴─────────────────────────┤
+│         Screens (Views)                │
+│  Screen (base) → telas concretas       │
+├─────────────────────────────────────────┤
+│    DriverContext (Hardware Abstraction)│
+│  Display · RTC · Buttons · Lantern     │
+├─────────────────────────────────────────┤
+│      Services (Network, etc)           │
+│        NetworkService (static)         │
+└─────────────────────────────────────────┘
 ```
+
+A principal mudança estrutural desta versão: não existe mais um `OutputManager` separado nem telas pré-instanciadas com ponteiros configurados manualmente em `main.cpp`. Todos os drivers vivem dentro de um único `DriverContext`, e as telas são criadas e destruídas dinamicamente por uma fábrica (`StaticRegistry`) identificada por um `enum class ScreenID`.
 
 ---
 
@@ -62,19 +66,19 @@ O BeNexus_FX é um firmware modular para ESP8266, projetado em camadas com separ
 
 ### 1. Core — ScreenManager
 
-**Arquivo:** `src/core/ScreenManager.{h,cpp}`
+**Arquivo:** `src/core/ScreenManager.{hpp,cpp}`
 
-Orquestrador central do firmware. Gerencia o ciclo de vida das telas, propaga eventos de input e coordena o auto-desligamento do display.
+Orquestrador central do firmware. Gerencia o ciclo de vida das telas (agora via `new`/`delete` sob demanda), propaga eventos de input e coordena o auto-desligamento do display.
 
 **Construtor:**
 ```cpp
-ScreenManager(Screen* initialScreen, Display* display, RTCManager* rtc);
+ScreenManager(ScreenID initialScreenID, DriverContext &driverContext);
 ```
 
 **Métodos públicos:**
 ```cpp
-void begin()                     // Inicializa tela ativa e RTC
-void update()                    // Atualiza NetworkService, RTC, tela e display
+void begin()                     // Inicializa display, RTC, lanterna e a tela inicial
+void update()                    // Atualiza NetworkService, RTC, tela atual e cuida de transições
 void draw()                      // Delega renderização à tela atual
 void handleInput(ButtonEvent ev) // Gerencia wake-up do display e input
 ```
@@ -82,15 +86,18 @@ void handleInput(ButtonEvent ev) // Gerencia wake-up do display e input
 **Fluxo de transição de tela:**
 ```
 currentScreen->update()
-  → nextScreen() retorna ponteiro diferente
+  → nextScreen() retorna um ScreenID diferente de selfScreenID()
   → currentScreen->end()
-  → currentScreen = next
+  → delete currentScreen
+  → currentScreen = createScreen(next, driverContext)  // fábrica do StaticRegistry
   → currentScreen->begin()
-  → display->resetAutoOff()
+  → driverContext.display->resetAutoOff()
 ```
 
-**Detecção de mudança de estado:**  
-O `ScreenManager` também monitora `currentScreen->getState()`. Se o estado interno da tela mudar, o auto-off do display é resetado automaticamente — útil para telas que atualizam sua UI sem input do usuário.
+> Reparem: a tela antiga é **deletada** e a nova é **alocada com `new`** a cada transição. Isso é intencional — mantém o footprint de RAM baixo, já que só existe uma tela viva por vez na memória.
+
+**Detecção de mudança de estado:**
+O `ScreenManager` também monitora `currentScreen->getState()`. Se o estado interno da tela mudar, o auto-off do display é resetado automaticamente — útil para telas que atualizam sua UI sem input do usuário (por exemplo, a `WiFiScreen` exibindo o progresso de uma conexão).
 
 **Lógica de input:**
 - Se o display estiver desligado e qualquer botão for pressionado, **apenas acorda o display** (o input não é repassado à tela).
@@ -98,12 +105,63 @@ O `ScreenManager` também monitora `currentScreen->getState()`. Se o estado inte
 
 ---
 
-### 2. Input — InputManager + Buttons
+### 2. Core — StaticRegistry (a fábrica de telas)
 
-**Arquivos:** `src/input/InputManager.{h,cpp}`, `src/drivers/Buttons.{h,cpp}`, `src/input/ButtonEvent.h`
+**Arquivos:** `src/core/StaticRegistry.{hpp,cpp}`
+
+Aqui mora o `enum class ScreenID`, que identifica cada tela do sistema, e a função `createScreen()`, responsável por alocar dinamicamente a tela correspondente.
+
+```cpp
+enum class ScreenID {
+  NONE, BOOT, CALENDAR, CLOCK, FLASHLIGHT, MENUAPP, NTP, WIFI
+};
+
+struct ScreenRegistry {
+  ScreenID id;
+  Screen *(*creator)(DriverContext &);
+};
+
+Screen *createScreen(ScreenID id, DriverContext &ctx);
+```
+
+Cada tela expõe um método estático `create(DriverContext&)` que é registrado numa tabela (`registry[]`) dentro de `StaticRegistry.cpp`. Adicionar uma tela nova = adicionar uma linha nessa tabela. Simples assim (mais detalhes no [Guia de Desenvolvimento](docs/DEVELOPMENT_GUIDE.md)).
+
+---
+
+### 3. Drivers — DriverContext
+
+**Arquivos:** `src/drivers/DriverContext.{hpp,cpp}`
+
+Struct central que agrupa ponteiros para todos os drivers de hardware. É passada por referência para `ScreenManager`, `InputManager` e para cada tela — ninguém mais precisa receber uma penca de ponteiros individuais no construtor.
+
+```cpp
+struct DriverContext {
+  Display *display;
+  RTC *rtc;
+  Buttons *buttons;
+  Lantern *lantern;
+};
+
+DriverContext initDriverContext();
+```
+
+Os pinos de GPIO (botões e lanterna) são definidos como constantes dentro de `DriverContext.cpp`, junto das instâncias globais dos drivers.
+
+---
+
+### 4. Input — InputManager + Buttons
+
+**Arquivos:** `src/input/InputManager.{hpp,cpp}`, `src/drivers/Buttons.{hpp,cpp}`, `src/input/ButtonEvent.hpp`
 
 #### InputManager
-Abstrai a leitura dos botões e expõe um único evento por ciclo de `loop`.
+Abstrai a leitura dos botões (via `DriverContext`) e expõe um único evento por ciclo de `loop`.
+
+```cpp
+InputManager(DriverContext &driverContext);
+void begin();
+void update();
+ButtonEvent getEvent();
+```
 
 **Eventos gerados** (`ButtonEvent`):
 | Evento | Trigger |
@@ -132,26 +190,29 @@ if (btnUp.rose() && !upHoldFired)
 
 ---
 
-### 3. Output — OutputManager + Lantern
+### 5. Drivers — Lantern
 
-**Arquivos:** `src/output/OutputManager.{h,cpp}`, `src/drivers/Lantern.{h,cpp}`
+**Arquivo:** `src/drivers/Lantern.{hpp,cpp}`
 
-#### OutputManager
-Camada de abstração para dispositivos de saída. Gerencia a `Lantern` e serve como ponto de extensão para novos periféricos (buzzer, motor, etc.).
+Controla um LED/relé no GPIO 16, agora acessado diretamente via `driverContext.lantern` — sem camada intermediária de `OutputManager`.
 
-#### Lantern (Driver)
-Controla um LED/relé no GPIO 16.
+```cpp
+void begin()
+bool getLanternStatus()
+void setLanternStatus(bool status)
+void toggle()
+```
 
 - Lógica invertida: `LOW` = ligado
 - Toggle simples com estado persistente
 
 ---
 
-### 4. Drivers — Display + RTC
+### 6. Drivers — Display + RTC
 
 #### Display
-**Arquivo:** `src/drivers/Display.{h,cpp}`  
-**Hardware:** OLED SH1106 128×64 via I2C  
+**Arquivo:** `src/drivers/Display.{hpp,cpp}`
+**Hardware:** OLED SH1106 128×64 via I2C
 **Biblioteca:** U8g2
 
 **Pinos I2C:**
@@ -166,7 +227,7 @@ void begin()                                      // Inicializa U8g2, liga displ
 void clear()                                      // Limpa o buffer interno
 void display()                                    // Envia buffer para o hardware
 void drawText(int x, int y, const char* text)
-void printCentered(const char* text, int y)
+void printCentered(const char* text, int yOffset = 0)
 void fontSet(const uint8_t* font)
 void drawFrame(int x, int y, int w, int h)
 void drawBox(uint8_t x, uint8_t y, uint8_t w, uint8_t h)
@@ -184,29 +245,42 @@ void resetAutoOff()                               // Reinicia o timer e liga dis
 
 **Ciclo de uso padrão em telas:**
 ```cpp
-display->clear();
+driverContext.display->clear();
 // ... drawText, printCentered, etc.
-display->display(); // obrigatório para enviar para a tela
+driverContext.display->display(); // obrigatório para enviar para a tela
 ```
 
-#### RTCManager
-**Arquivo:** `src/drivers/RTC.{h,cpp}`  
+#### RTC
+**Arquivo:** `src/drivers/RTC.{hpp,cpp}`
 **Hardware:** DS3231 via I2C compartilhado
 
 ```cpp
 void begin()
 void update()                // Deve ser chamado todo loop (via ScreenManager)
+
 String getTimeString()       // "14:30:45"
-String getDateString()       // "25/12/2024"
-String getDayOfWeek()
-void setDateTime(tm* t)      // Usado pelo NTPScreen para sincronizar
+String getDateString()       // "25/12/24"
+
+int getHour() const
+int getMinute() const
+int getSecond() const
+int getDay() const
+int getMonth() const
+int getYear() const
+int getDoW() const           // 1 = Domingo ... 7 = Sábado
+
+void setTime(int hour, int minute, int second)
+void setDate(int day, int month, int year, int dow = 1)
+void setDateTime(struct tm *ti)   // Usado pelo NTPScreen para sincronizar
 ```
+
+> **Nota:** cada tela decide como formatar hora/data — a `ClockScreen`, por exemplo, usa `getTimeString()`/`getDateString()` para exibição rápida e `getDoW()` para montar o nome do dia da semana manualmente (o RTC não guarda nomes de dias, só números).
 
 ---
 
-### 5. Services — NetworkService
+### 7. Services — NetworkService
 
-**Arquivo:** `src/services/NetworkService.{h,cpp}`
+**Arquivo:** `src/services/NetworkService.{hpp,cpp}`
 
 Singleton estático que gerencia o ciclo de vida da conexão WiFi.
 
@@ -237,22 +311,27 @@ static void begin()    // Chama WiFi.mode(WIFI_OFF)
 
 ### Interface `Screen` (Base)
 
-**Arquivo:** `src/screens/Screen.h`
+**Arquivo:** `src/screens/Screen.hpp`
 
 ```cpp
 class Screen {
 public:
-    virtual const char* name()            // Identificação para debug
-    virtual void begin()                  // Inicialização ao entrar na tela
-    virtual void end()                    // Limpeza ao sair da tela
-    virtual void update()                 // Lógica (chamada todo frame)
-    virtual void draw() = 0;             // Renderização (OBRIGATÓRIO)
+    virtual ~Screen() {}
+
+    virtual const char* name()   { return "Unnamed"; }   // Identificação para debug
+
+    virtual void begin()         {}   // Inicialização ao entrar na tela
+    virtual void end()           {}   // Limpeza ao sair da tela
+    virtual void update()        {}   // Lógica (chamada todo frame)
+    virtual void draw() = 0;         // Renderização (OBRIGATÓRIO)
     virtual void handleInput(ButtonEvent ev);  // Dispatch de eventos (implementado em Screen.cpp)
-    virtual Screen* nextScreen()          // Retorna this (permanecer) ou ponteiro para próxima
+
+    virtual ScreenID selfScreenID() const { return ScreenID::NONE; }
+    virtual ScreenID nextScreen()   const { return ScreenID::NONE; }
+
     virtual uint8_t getState() const = 0; // Estado interno para detecção pelo ScreenManager
 
 protected:
-    // Callbacks de botão (override opcional)
     virtual void onUpPressed()    {}
     virtual void onDownPressed()  {}
     virtual void onSelectPressed(){}
@@ -263,6 +342,8 @@ protected:
 ```
 
 > **`getState()` é obrigatório.** Retorne um enum castado para `uint8_t` representando o estado visual atual da tela. O `ScreenManager` usa isso para resetar o auto-off quando a tela muda de estado internamente.
+
+> **Navegação por `ScreenID`, não por ponteiro.** Cada tela concreta implementa `selfScreenID()` (quem ela é) e `nextScreen()` (para onde ir, ou ela mesma se ainda não é hora de sair). Além disso, toda tela expõe um método estático `create(DriverContext&)`, usado pelo `StaticRegistry` para instanciá-la sob demanda.
 
 ### Hierarquia de Navegação
 
@@ -285,10 +366,10 @@ MenuAppScreen (hub central)
 | `BootScreen` | `screens/Boot/` | Splash screen com animação, dura 500 ms |
 | `MenuAppScreen` | `screens/MenuApp/` | Menu com scroll e animação LineGrow no item selecionado |
 | `ClockScreen` | `screens/Clock/` | Exibe hora e data via RTC |
-| `CalendarScreen` | `screens/Calendar/` | Exibe data completa via RTC |
+| `CalendarScreen` | `screens/Calendar/` | Exibe calendário mensal completo via RTC |
 | `WiFiScreen` | `screens/WiFi/` | Conecta/desconecta WiFi, exibe IP e RSSI |
 | `NTPScreen` | `screens/NTP/` | Sincroniza RTC via internet |
-| `FlashlightScreen` | `screens/Flashlight/` | Toggle da lanterna via OutputManager |
+| `FlashlightScreen` | `screens/Flashlight/` | Toggle da lanterna via `driverContext.lantern` |
 
 ---
 
@@ -337,23 +418,41 @@ LineGrowAnimation(
 
 ### `setup()`
 ```cpp
-display.begin();                              // 1. Display primeiro
-menuAppScreen.setScreens(...);                // 2. Configura navegação do menu
-screenManager.begin();                        // 3. Inicia BootScreen + RTC
-inputManager.begin();                         // 4. Configura botões
-outputManager.begin();                        // 5. Inicializa lanterna
+screenManager.begin();     // Inicializa display, RTC, lanterna e a BootScreen
+inputManager.begin();      // Configura botões
 ```
 
 ### `loop()`
 ```cpp
 screenManager.update();    // NetworkService, RTC, tela atual, transições, auto-off
 inputManager.update();     // Bounce2 debounce
-outputManager.update();    // Estado dos outputs
 
 ButtonEvent ev = inputManager.getEvent();
 screenManager.handleInput(ev);
 
 screenManager.draw();      // Renderiza tela atual
+```
+
+Com essa arquitetura, `main.cpp` ficou reduzido a uma camada fina de composição:
+```cpp
+DriverContext driverContext = initDriverContext();
+InputManager inputManager(driverContext);
+ScreenManager screenManager(ScreenID::BOOT, driverContext);
+
+void setup() {
+  screenManager.begin();
+  inputManager.begin();
+}
+
+void loop() {
+  screenManager.update();
+  inputManager.update();
+
+  ButtonEvent ev = inputManager.getEvent();
+  screenManager.handleInput(ev);
+
+  screenManager.draw();
+}
 ```
 
 ---
@@ -410,13 +509,16 @@ ESP8266 (ESP-12E)
 ### Event-Driven Input
 Botões não são lidos diretamente pelas telas. O `InputManager` produz um único `ButtonEvent` por ciclo, desacoplando hardware de lógica de apresentação.
 
-### Screen Transitions via Ponteiro
-Telas nunca manipulam o `ScreenManager` diretamente. A transição acontece pelo retorno de `nextScreen()`:
+### Screen Transitions via ScreenID + Fábrica
+Telas nunca manipulam o `ScreenManager` diretamente, nem trocam ponteiros entre si. A transição acontece pelo retorno de `nextScreen()` (um `ScreenID`), e é o `StaticRegistry` quem aloca a tela de destino via `createScreen()`:
 ```cpp
-Screen* nextScreen() override {
-    return shouldGoBack ? backScreen : this;
+ScreenID nextScreen() const override {
+    return shouldGoBack ? ScreenID::MENUAPP : selfScreenID();
 }
 ```
+
+### DriverContext como Ponto Único de Acesso ao Hardware
+Todas as telas e managers recebem uma referência a `DriverContext`, evitando que cada classe precise declarar seu próprio conjunto de ponteiros de driver no construtor.
 
 ### Auto-Off Display
 O timer é resetado por qualquer input ou por mudança no valor de `getState()`. O primeiro input após o desligamento apenas religa o display, sem repassar o evento à tela.
@@ -431,11 +533,12 @@ Cada tela expõe seu estado interno via `getState()`. O `ScreenManager` compara 
 
 ## 📝 Convenções de Código
 
-- **Classes:** PascalCase (`MenuAppScreen`, `RTCManager`)
+- **Classes:** PascalCase (`MenuAppScreen`, `RTC`)
 - **Variáveis/métodos:** camelCase (`selectedIndex`, `handleInput`)
 - **Constantes/pinos:** UPPER_SNAKE_CASE (`PIN_UP_BTN`, `PIN_LANTERN`)
-- **Arquivos:** um par `.h`/`.cpp` por classe, dentro de pasta por categoria
+- **Arquivos:** um par `.hpp`/`.cpp` por classe, dentro de pasta por categoria
 - **Enums de estado:** `enum class NomeDaTelaState { IDLE, ... }`
+- **Identificação de tela:** `ScreenID` (enum global em `StaticRegistry.hpp`), nunca ponteiro cru
 
 ---
 
@@ -459,3 +562,7 @@ Cada tela expõe seu estado interno via `getState()`. O `ScreenManager` compara 
 3. Commit: `git commit -m 'Add: MinhaFeature'`
 4. Push: `git push origin feature/MinhaFeature`
 5. Abra um Pull Request
+
+---
+
+**Licença:** MIT © 2026 Gustavo Bento de Oliveira Teles

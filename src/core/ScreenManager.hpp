@@ -1,13 +1,12 @@
 #pragma once
-#include "drivers/Display.hpp"
-#include "drivers/RTC.hpp"
+#include "core/StaticRegistry.hpp"
+#include "drivers/DriverContext.hpp"
 #include "input/ButtonEvent.hpp"
 #include "screens/Screen.hpp"
 
 class ScreenManager {
 public:
-  explicit ScreenManager(Screen *initialScreen, Display *display,
-                         RTCManager *rtc);
+  ScreenManager(ScreenID initialScreenID, DriverContext &driverContext);
 
   void begin();
   void update();
@@ -15,9 +14,9 @@ public:
   void handleInput(ButtonEvent ev);
 
 private:
+  ScreenID initialScreenID;
   Screen *currentScreen;
-  Display *display;
-  RTCManager *rtc;
+  uint8_t currentStateScreen = 0;
 
-  uint8_t currentStateScreen = -1;
+  DriverContext &driverContext;
 };

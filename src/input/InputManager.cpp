@@ -1,24 +1,24 @@
 #include "InputManager.hpp"
 
-InputManager::InputManager(Buttons &b) : buttons(b) {}
+InputManager::InputManager(DriverContext &ctx) : driverContext(ctx) {}
 
-void InputManager::begin() { buttons.begin(); }
+void InputManager::begin() { driverContext.buttons->begin(); }
 
-void InputManager::update() { buttons.update(); }
+void InputManager::update() { driverContext.buttons->update(); }
 
 ButtonEvent InputManager::getEvent() {
-  if (buttons.upHeld())
+  if (driverContext.buttons->upHeld())
     return ButtonEvent::UpHold;
-  if (buttons.downHeld())
+  if (driverContext.buttons->downHeld())
     return ButtonEvent::DownHold;
-  if (buttons.selectHeld())
+  if (driverContext.buttons->selectHeld())
     return ButtonEvent::SelectHold;
 
-  if (buttons.upPressed())
+  if (driverContext.buttons->upPressed())
     return ButtonEvent::Up;
-  if (buttons.downPressed())
+  if (driverContext.buttons->downPressed())
     return ButtonEvent::Down;
-  if (buttons.selectPressed())
+  if (driverContext.buttons->selectPressed())
     return ButtonEvent::Select;
 
   return ButtonEvent::None;

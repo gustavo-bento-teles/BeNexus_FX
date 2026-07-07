@@ -1,15 +1,14 @@
 #pragma once
-#include "drivers/Display.hpp"
-#include "drivers/RTC.hpp"
+#include "core/StaticRegistry.hpp"
+#include "drivers/DriverContext.hpp"
 #include "screens/Screen.hpp"
 
 enum class CalendarScreenState { IDLE };
 
 class CalendarScreen : public Screen {
 public:
-  CalendarScreen(Display *disp, RTCManager *rtc, Screen *next)
-      : display(disp), rtcManager(rtc), nextScreenPtr(next),
-        nextTriggered(false) {}
+  CalendarScreen(DriverContext &ctx, ScreenID next)
+      : driverContext(ctx), nextScreenID(next), nextTriggered(false) {}
 
   const char *name() override { return "CalendarScreen"; }
 
@@ -18,7 +17,15 @@ public:
   void draw() override;
   void end() override;
 
-  Screen *nextScreen() override { return nextTriggered ? nextScreenPtr : this; }
+  ScreenID selfScreenID() const override { return ScreenID::CALENDAR; }
+
+  ScreenID nextScreen() const override {
+    return nextTriggered ? nextScreenID : ScreenID::CALENDAR;
+  }
+
+  static Screen *create(DriverContext &driverContext) {
+    return new CalendarScreen(driverContext, ScreenID::MENUAPP);
+  }
 
   uint8_t getState() const override { return static_cast<int>(screenState); }
 
@@ -32,9 +39,8 @@ protected:
   void onDownHeld() override;
 
 private:
-  Display *display;
-  RTCManager *rtcManager;
-  Screen *nextScreenPtr;
+  DriverContext &driverContext;
+  ScreenID nextScreenID;
   bool nextTriggered;
 
   int currentDay;

@@ -1,25 +1,39 @@
 #include "MenuAppScreen.hpp"
+#include "core/StaticRegistry.hpp"
 #include "screens/animations/LineGrowAnimation.hpp"
+
+constexpr AppRegistry appsRegistry[5] = {{"Relogio", ScreenID::CLOCK},
+                                         {"Calendario", ScreenID::CALENDAR},
+                                         {"Tela WiFi", ScreenID::WIFI},
+                                         {"Tela NTP", ScreenID::NTP},
+                                         {"Lanterna", ScreenID::FLASHLIGHT}};
+
+constexpr uint8_t numOptions = sizeof(appsRegistry) / sizeof(appsRegistry[0]);
+
+int MenuAppScreen::selectedIndex = 0;
+int MenuAppScreen::offset = 0;
 
 void MenuAppScreen::begin() {
   nextTriggered = false;
-  display->fontSet(u8g2_font_6x10_tr);
+  driverContext.display->fontSet(u8g2_font_6x10_tr);
 
   int visibleIndex = selectedIndex - offset;
 
   animator.add(new LineGrowAnimation(
       22, 12 + (visibleIndex * 12),
-      display->getWStr(options[selectedIndex]) - 19, 3, true, true));
+      driverContext.display->getWStr(appsRegistry[selectedIndex].optionName) -
+          19,
+      3, true, true));
 }
 
 void MenuAppScreen::update() { animator.update(); }
 
 void MenuAppScreen::draw() {
-  display->clear();
+  driverContext.display->clear();
 
-  animator.draw(display);
+  animator.draw(driverContext.display);
 
-  display->fontSet(u8g2_font_6x10_tr);
+  driverContext.display->fontSet(u8g2_font_6x10_tr);
 
   int y = 10;
   for (int i = 0; i < numMaxVisible; i++) {
@@ -28,17 +42,17 @@ void MenuAppScreen::draw() {
       break;
 
     String line = (index == selectedIndex) ? "> " : "  ";
-    line += options[index];
+    line += appsRegistry[index].optionName;
 
-    display->drawText(10, y + (i * 12), line.c_str());
+    driverContext.display->drawText(10, y + (i * 12), line.c_str());
   }
 
-  display->display();
+  driverContext.display->display();
 }
 
 void MenuAppScreen::end() {
-  display->clear();
-  display->display();
+  driverContext.display->clear();
+  driverContext.display->display();
   animator.clear();
 }
 
@@ -57,7 +71,9 @@ void MenuAppScreen::onUpPressed() {
 
   animator.add(new LineGrowAnimation(
       22, 12 + (visibleIndex * 12),
-      display->getWStr(options[selectedIndex]) - 19, 3, true, true));
+      driverContext.display->getWStr(appsRegistry[selectedIndex].optionName) -
+          19,
+      3, true, true));
 }
 
 void MenuAppScreen::onDownPressed() {
@@ -75,30 +91,12 @@ void MenuAppScreen::onDownPressed() {
 
   animator.add(new LineGrowAnimation(
       22, 12 + (visibleIndex * 12),
-      display->getWStr(options[selectedIndex]) - 19, 3, true, true));
+      driverContext.display->getWStr(appsRegistry[selectedIndex].optionName) -
+          19,
+      3, true, true));
 }
 
 void MenuAppScreen::onSelectPressed() {
-  switch (selectedIndex) {
-  case 0:
-    nextScreenPtr = clockScreen;
-    nextTriggered = true;
-    break;
-  case 1:
-    nextScreenPtr = calendarScreen;
-    nextTriggered = true;
-    break;
-  case 2:
-    nextScreenPtr = wifiScreen;
-    nextTriggered = true;
-    break;
-  case 3:
-    nextScreenPtr = ntpScreen;
-    nextTriggered = true;
-    break;
-  case 4:
-    nextScreenPtr = flashlightScreen;
-    nextTriggered = true;
-    break;
-  }
+  nextScreenID = appsRegistry[selectedIndex].optionIdScreen;
+  nextTriggered = true;
 }
